@@ -1,11 +1,12 @@
 // Create a 6x5 grid (like Wordle) and add it to the page
-import { commonWords } from './common-words.js';
 import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton } from './setup.js';
-import { wordleWords } from './wordle-dictionary.js';
+import { commonWords } from './words/common-words.js';
+import { previousWordleWords } from './words/previous-wordle-words.js';
+import { allWords } from './words/all-words.js';
+import { hexToRgb, clearGrid } from './utils.js';
 
 const WORD_LENGTH = 5;
 const ROWS = 6;
-
 
 const gridContainer = createGridContainer(WORD_LENGTH, ROWS);
 const keyboardContainer = createKeyboardContainer(WORD_LENGTH);
@@ -13,45 +14,17 @@ const keyboardContainer = createKeyboardContainer(WORD_LENGTH);
 let currentRow = 0;
 let currentCol = 0;
 let word = '';
-let words = [];
+let wordsToGuess = [];
+let wordsToUse = [];
 let wordSource = '';
 let playGameHandler = null;
 
-
-function hexToRgb(hex) {
-    hex = hex.replace('#', '');
-    const bigint = parseInt(hex, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgb(${r}, ${g}, ${b})`;
-}
 
 function addLetterToSquare(letter, row, col) {
     const index = row * WORD_LENGTH + col;
     const square = gridContainer.children[index];
     if (square) {
         square.textContent = letter.toUpperCase();
-    }
-}
-
-function clearGrid() {
-    for (let i = 0; i < gridContainer.children.length; i++) {
-        gridContainer.children[i].textContent = '';
-        gridContainer.children[i].style.backgroundColor = '#fff'; // Reset background color
-        gridContainer.children[i].style.border = '1px solid #ccc'; // Reset border color
-        gridContainer.children[i].style.transition = 'none'; // Reset transition for immediate effect
-        gridContainer.children[i].style.color = '#333'; // Reset text color
-    }
-    // Reset all keyboard buttons
-    for (let row = 0; row < keyboardContainer.children.length; row++) {
-        const rowDiv = keyboardContainer.children[row];
-        for (let btn = 0; btn < rowDiv.children.length; btn++) {
-            const keyButton = rowDiv.children[btn];
-            keyButton.style.backgroundColor = '#e0e0e0';
-            keyButton.style.color = '#333';
-            keyButton.style.transition = 'none';
-        }
     }
 }
 
@@ -126,9 +99,12 @@ async function checkGuess(guess, word, currentRow) {
     guess.forEach((letter, index) => {
         const keyButton = keyboardKeys.find(button => button.textContent.toUpperCase() === letter.toUpperCase());
         if (keyButton) {
-            // If the key is already correct, do not change it
-            if (keyButton.style.backgroundColor === hexToRgb(LetterStatus.CORRECT))
+            if (keyButton.style.backgroundColor === hexToRgb(LetterStatus.CORRECT) || 
+                keyButton.style.backgroundColor === hexToRgb(LetterStatus.PRESENT) && statuses[index] === LetterStatus.ABSENT ||
+                keyButton.style.backgroundColor === hexToRgb(statuses[index])) {
                 return;
+            }
+
             
             keyButton.style.backgroundColor = statuses[index];
             keyButton.style.color = '#fff'; // Change text color to white for better contrast
@@ -165,7 +141,7 @@ function addOptionToRestartButton() {
     }
     
     function restart() {
-        clearGrid();
+        clearGrid(gridContainer, keyboardContainer);
         playerInput();
         console.log('Game restarted');
         document.removeEventListener('keydown', restartOnInputR); // Remove the restart event listener
@@ -198,8 +174,8 @@ function playerInput() {
     currentCol = 0;
     let gameDone = false;
 
-    clearGrid();
-    word = words[Math.floor(Math.random() * words.length)]; // Randomly select a word from the list
+    clearGrid(gridContainer, keyboardContainer);
+    word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)]; // Randomly select a word from the list
 
     if (playGameHandler) {
         document.removeEventListener('keydown', playGameHandler);
@@ -217,7 +193,7 @@ function playerInput() {
         } else if (event.key === 'Enter' && !gameDone) {
             const guess = Array.from({ length: WORD_LENGTH }, (_, i) => gridContainer.children[currentRow * WORD_LENGTH + i].textContent);
 
-            if (currentCol < WORD_LENGTH || !words.includes(guess.join(''))) {
+            if (currentCol < WORD_LENGTH || !wordsToUse.includes(guess.join(''))) {
                 showWordIsInvalid(currentRow);
                 return;
             }
@@ -272,25 +248,38 @@ function showWordSetSelection() {
     container.appendChild(info);
 
     const btnCommon = createSelectionButton('Common Words');
+    const btnPrev = createSelectionButton('Previous Words');    
     const btnAll = createSelectionButton('All Words');
 
     btnCommon.onclick = () => {
         // Use common words from common-words.js
-        words = commonWords.map(w => w.toUpperCase());
+        wordsToGuess = commonWords.map(w => w.toUpperCase());
+        wordsToUse = wordsToGuess; // Use the same words for guessing
         wordSource = 'common';
         document.body.removeChild(container);
         startGame();
     };
 
+    btnPrev.onclick = () => {
+        // Use previously used words from previous-wordle-words.js
+        wordsToGuess = previousWordleWords.map(w => w.toUpperCase());
+        wordsToUse = commonWords.map(w => w.toUpperCase()); // Use common words for guessing
+        wordSource = 'previous';
+        document.body.removeChild(container);
+        startGame();
+    };
+
     btnAll.onclick = () => {
-        // Use all words from wordle-dictionary.js
-        words = wordleWords.map(w => w.toUpperCase());
+        // Use all words from all-words.js
+        wordsToGuess = allWords.map(w => w.toUpperCase());
+        wordsToUse = wordsToGuess; // Use the same words for guessing
         wordSource = 'all';
         document.body.removeChild(container);
         startGame();
     };
 
     container.appendChild(btnCommon);
+    container.appendChild(btnPrev);
     container.appendChild(btnAll);
     document.body.appendChild(container);
 }

@@ -1,4 +1,4 @@
-export const wordleWords = [
+export const allWords = [
   "aahed",
   "aalii",
   "aapas",
