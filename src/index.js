@@ -4,6 +4,8 @@ import { commonWords } from './words/common-words.js';
 import { previousWordleWords } from './words/previous-wordle-words.js';
 import { allWords } from './words/all-words.js';
 import { hexToRgb, clearGrid } from './utils.js';
+import { countMostCommonLetters, solveWordle } from './solve-wordle.js';
+import { LetterStatus } from './utils.js';
 
 const WORD_LENGTH = 5;
 const ROWS = 6;
@@ -27,12 +29,6 @@ function addLetterToSquare(letter, row, col) {
         square.textContent = letter.toUpperCase();
     }
 }
-
-const LetterStatus = {
-    CORRECT: '#6baa64',
-    PRESENT: '#cab458',
-    ABSENT: '#787c7e'
-};
 
 
 function getLetterStatuses(guess, word) {
@@ -68,7 +64,7 @@ async function checkGuess(guess, word, currentRow) {
         const status = statuses[i];
         
         const square = gridContainer.children[i + currentRow * WORD_LENGTH];
-        console.log(`Letter: ${guess[i]}, Status: ${status}, square: ${square.textContent}`);
+        console.debug(`Letter: ${guess[i]}, Status: ${status}, square: ${square.textContent}`);
 
         setTimeout(() => {
             const newStyle = {
@@ -157,7 +153,7 @@ function addOptionToRestartButton() {
 function showWordIsInvalid(currentRow) {
     const squares = Array.from(gridContainer.children);
     const startIndex = currentRow * WORD_LENGTH;
-    console.log(`Invalid word! ${currentRow} - Highlighting squares from index ${startIndex} to ${startIndex + WORD_LENGTH - 1}`);
+    console.debug(`Invalid word! ${currentRow} - Highlighting squares from index ${startIndex} to ${startIndex + WORD_LENGTH - 1}`);
     for (let i = startIndex; i < startIndex + WORD_LENGTH; i++) {
         const square = squares[i];
         square.style.border = '2px solid red';
@@ -181,7 +177,7 @@ function playerInput() {
         document.removeEventListener('keydown', playGameHandler);
     }
 
-    console.log(`The word to guess is: ${word}`); // For debugging purposes
+    console.debug(`The word to guess is: ${word}`); // For debugging purposes
 
     playGameHandler = function(event) {
         if (event.key.length === 1 && event.key.match(/[a-zA-Z]/) && currentCol < WORD_LENGTH) {
@@ -210,11 +206,21 @@ function playerInput() {
                     document.removeEventListener('keydown', playGameHandler); // Remove event listener to stop further input
                 }
                 else {
-                    console.log(`Current guess: ${guess.join('')}, Target word: ${word}`);
+                    console.debug(`Current guess: ${guess.join('')}, Target word: ${word}`);
                     currentRow++;
                     currentCol = 0;
                 }
+
+                console.log(`Checking words after guess: ${guess.join('')} at row ${currentRow}`);
+                const possibleWords = solveWordle(gridContainer, currentRow, wordSource);
+                console.log(`Possible words after guess: ${possibleWords.length}`);
+                console.debug(possibleWords);
+                const letterCounts = countMostCommonLetters(possibleWords);
+                console.log(letterCounts);
+                const sortedLetterCounts = Object.entries(letterCounts).sort((a,b) => b[1] - a[1]);
+                console.log(`Most common letters: ${sortedLetterCounts.slice(0,10)}`);
             });
+
         }
     }
     document.addEventListener('keydown', playGameHandler);

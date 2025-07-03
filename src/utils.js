@@ -1,3 +1,15 @@
+export const LetterStatus = {
+    CORRECT: '#6baa64',
+    PRESENT: '#cab458',
+    ABSENT: '#787c7e'
+};
+
+export function letterStatusToName(ls) {
+    return ls === LetterStatus.CORRECT ? 'CORRECT' :
+           ls === LetterStatus.PRESENT ? 'PRESENT' :
+           'ABSENT';
+}
+
 export function hexToRgb(hex) {
     hex = hex.replace('#', '');
     const bigint = parseInt(hex, 16);
