@@ -1,11 +1,16 @@
 export function createGridContainer(WORD_LENGTH, ROWS) {
     const gridContainer = document.createElement('div');
+    const squareSize = 50; // px
+    const gap = 8; // px
+    // Calculate total width: (n squares * size) + (n-1 gaps)
+    const totalWidth = WORD_LENGTH * squareSize + (WORD_LENGTH - 1) * gap;
+
     Object.assign(gridContainer.style, {
         display: 'grid',
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${WORD_LENGTH}, 1fr)`,
-        gap: '8px',
-        width: '250px',
+        gap: `${gap}px`,
+        width: `${totalWidth}px`,
         margin: '40px auto'
     });
 
@@ -15,8 +20,8 @@ export function createGridContainer(WORD_LENGTH, ROWS) {
             className: 'grid-square',
             textContent: '',
             style: {
-                width: '50px',
-                height: '50px',
+                width: `${squareSize}px`,
+                height: `${squareSize}px`,
                 border: '1px solid #ccc',
                 display: 'flex',
                 alignItems: 'center',
