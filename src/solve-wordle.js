@@ -17,42 +17,45 @@ export function solveWordle(gridContainer, currentRow, wordSource = 'common') {
 
 
 function filterWordsFromSet(wordSet, guesses, statuses) {
-    if (!Array.isArray(guesses) || !Array.isArray(statuses) || guesses.length !== statuses.length) {
-        throw new Error("Invalid input: guesses and statuses must be arrays of the same length.");
-    }
-
-    console.log(`Filtering words with ${guesses} and statuses ${statuses} - ${statuses.length}`);
-
-    const statusPerLetter = [];
-    statuses.forEach((status, idx) => {
-        for (let i = 0; i < status.length; i++) {
-            statusPerLetter.push(
-                {
-                    letter: guesses[idx][i],
-                    status: status[i],
-                    idx: i,
-                }
-            );
-        }
-    });
-    console.log(statusPerLetter);
-
     let words = wordSet.map(word => word.toUpperCase());
 
-    statusPerLetter.forEach(ls => {
-        // console.debug(`${ls} - ${ls.letter} - ${ls.status} - ${ls.idx}`);
-        if (ls.status === LetterStatus.ABSENT) {
-            words = words.filter(word => !word.includes(ls.letter));
-        } 
-        else if (ls.status === LetterStatus.CORRECT) {
-            words = words.filter(word => word[ls.idx] === ls.letter);
-        }
-        else if (ls.status === LetterStatus.PRESENT) {
-            words = words.filter(word => word[ls.idx] !== ls.letter && word.includes(ls.letter));
-        }
-        console.log(`Filtered ${ls.letter} being ${letterStatusToName(ls.status)} - left with ${words.length} possible words.`);
-    })
+    for (let row = 0; row < guesses.length; row++) {
+        const guess = guesses[row];
+        const status = statuses[row];
 
+        // 1. First, handle CORRECT and PRESENT
+        for (let i = 0; i < guess.length; i++) {
+            const letter = guess[i];
+            if (status[i] === LetterStatus.CORRECT) {
+                words = words.filter(word => word[i] === letter);
+            }
+        }
+        for (let i = 0; i < guess.length; i++) {
+            const letter = guess[i];
+            if (status[i] === LetterStatus.PRESENT) {
+                words = words.filter(word => word.includes(letter) && word[i] !== letter);
+            }
+        }
+
+        // 2. Now handle ABSENT, but only if the number of occurrences in the word is not more than the number of CORRECT+PRESENT for that letter in this guess
+        const letterCounts = {};
+        for (let i = 0; i < guess.length; i++) {
+            const letter = guess[i];
+            if (!letterCounts[letter]) letterCounts[letter] = { correct: 0, present: 0, absent: 0 };
+            if (status[i] === LetterStatus.CORRECT) letterCounts[letter].correct++;
+            else if (status[i] === LetterStatus.PRESENT) letterCounts[letter].present++;
+            else if (status[i] === LetterStatus.ABSENT) letterCounts[letter].absent++;
+        }
+        for (const letter in letterCounts) {
+            const allowedCount = letterCounts[letter].correct + letterCounts[letter].present;
+            if (letterCounts[letter].absent > 0) {
+                words = words.filter(word => {
+                    // Only allow words with at most allowedCount of this letter
+                    return (word.split(letter).length - 1) <= allowedCount;
+                });
+            }
+        }
+    }
     return words;
 }
 
