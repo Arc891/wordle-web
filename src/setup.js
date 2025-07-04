@@ -138,7 +138,7 @@ export function createSelectionButton(text) {
     return btn;
 }
 
-export function createHintButton(icon, ariaLabel) {
+export function createBottomButton(icon, ariaLabel) {
     const btn = document.createElement('button');
     btn.innerHTML = icon;
     btn.setAttribute('aria-label', ariaLabel);
@@ -162,39 +162,49 @@ export function createHintButton(icon, ariaLabel) {
     return btn;
 }
 
-export function addHintButtons(container, getHints) {
-    // Remove old buttons if present
-    document.getElementById('hint-btn-row')?.remove();
+function buttonWithLabel(btn, labelText) {
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.alignItems = 'center';
+    wrapper.appendChild(btn);
 
+    const label = document.createElement('div');
+    label.textContent = labelText;
+    label.style.fontSize = '0.85rem';
+    label.style.color = '#444';
+    label.style.marginTop = '2px';
+    wrapper.appendChild(label);
+
+    return wrapper;
+}
+
+function createNewBtnRow(container) {    
     const btnRow = document.createElement('div');
-    btnRow.id = 'hint-btn-row';
+    btnRow.id = 'game-btn-row';
     btnRow.style.display = 'flex';
     btnRow.style.justifyContent = 'center';
     btnRow.style.gap = '32px';
     btnRow.style.margin = '10px auto 0 auto';
     btnRow.style.width = container.style.width || 'max-content';
 
-    // Helper to wrap button and label
-    function buttonWithLabel(btn, labelText) {
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex';
-        wrapper.style.flexDirection = 'column';
-        wrapper.style.alignItems = 'center';
-        wrapper.appendChild(btn);
+    return btnRow;
+}
 
-        const label = document.createElement('div');
-        label.textContent = labelText;
-        label.style.fontSize = '0.85rem';
-        label.style.color = '#444';
-        label.style.marginTop = '2px';
-        wrapper.appendChild(label);
-
-        return wrapper;
+function getGameBtnRow(container) {
+    if (document.getElementById('game-btn-row')) {
+        return document.getElementById('game-btn-row');
+    } else {
+        return createNewBtnRow(container);
     }
+}
 
+export function addHintButtons(container, getHints) {
+
+    const btnRow = getGameBtnRow(container);
     // Lightbulb (letters) and question mark (words)
-    const lightbulbBtn = createHintButton('💡', 'Show most common letters');
-    const questionBtn = createHintButton('❓', 'Show possible words');
+    const lightbulbBtn = createBottomButton('💡', 'Show most common letters');
+    const questionBtn = createBottomButton('❓', 'Show possible words');
 
     lightbulbBtn.onclick = () => getHints('letters');
     questionBtn.onclick = () => getHints('words');
@@ -206,6 +216,42 @@ export function addHintButtons(container, getHints) {
     container.parentNode.insertBefore(btnRow, container.nextSibling);
 }
 
+export function addGameButtons(container, func) {
+    const btnRow = getGameBtnRow(container);
+
+    const giveUpBtn = createBottomButton('🛑', 'Give up this guess');
+    const resetBtn = createBottomButton('🔄', 'Restart game session');
+
+    giveUpBtn.onclick = () => func('give up');
+    resetBtn.onclick = () => func('reset');
+
+    btnRow.appendChild(buttonWithLabel(giveUpBtn, 'Give up'));
+    btnRow.appendChild(buttonWithLabel(resetBtn, 'Reset'));
+
+    // Insert after keyboard
+    container.parentNode.insertBefore(btnRow, container.nextSibling);
+}
+
+
+export function removeGameContent(gridContainer, keyboardContainer) {
+    // Remove grid
+    if (gridContainer.parentNode) gridContainer.parentNode.removeChild(gridContainer);
+    // Remove keyboard
+    if (keyboardContainer.parentNode) keyboardContainer.parentNode.removeChild(keyboardContainer);
+    // Remove dropdowns
+    document.getElementById('dropdown-words')?.remove();
+    document.getElementById('dropdown-letters')?.remove();
+    // Remove game/hint button rows
+    document.getElementById('game-btn-row')?.remove();
+    document.getElementById('hint-btn-row')?.remove();
+    // Remove restart button if present
+    const restartBtn = Array.from(document.body.querySelectorAll('button')).find(btn => btn.textContent === 'Restart Game');
+    if (restartBtn) restartBtn.remove();
+    // Remove word source info
+    Array.from(document.body.querySelectorAll('p')).forEach(p => {
+        if (p.textContent && p.textContent.startsWith('Words:')) p.remove();
+    });
+}
 
 export function createDropdown(container, content, id) {
     // Remove any existing dropdown with this id
@@ -251,6 +297,22 @@ export function createDropdown(container, content, id) {
     container.parentNode.insertBefore(dropdown, container.nextSibling);
     return dropdown;
 }
+
+export function addWordSourceBelowTitle(wordSource) {
+    // Append small text below h1 to show word source
+    const wordSourceText = document.createElement('p');
+    wordSourceText.textContent = `Words: ${wordSource}`;
+    const wordSourceStyle = {
+        fontSize: '0.8rem',
+        color: '#666',
+        marginTop: '-20px',
+        marginBottom: '-5px',
+        textAlign: 'center',
+    };
+    Object.assign(wordSourceText.style, wordSourceStyle);
+    document.body.appendChild(wordSourceText);
+}
+
 
 
 export function applyBodyStyles() {

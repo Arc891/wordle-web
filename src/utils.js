@@ -1,3 +1,7 @@
+import { allWords } from "./words/all-words";
+import { commonWords } from "./words/common-words";
+import { previousWordleWords } from "./words/previous-wordle-words";
+
 export const LetterStatus = {
     CORRECT: '#6baa64',
     PRESENT: '#cab458',
@@ -28,6 +32,7 @@ export function rgbToHex(rgb) {
 }
 
 export function clearGrid(gridContainer, keyboardContainer) {
+    console.debug("Clearing the grid...");
     for (let i = 0; i < gridContainer.children.length; i++) {
         gridContainer.children[i].textContent = '';
         gridContainer.children[i].style.backgroundColor = '#fff'; // Reset background color
@@ -45,4 +50,47 @@ export function clearGrid(gridContainer, keyboardContainer) {
             keyButton.style.transition = 'none';
         }
     }
+}
+
+export function simpleHash(str) {
+    let hash = 0, i, chr;
+    if (str.length === 0) return hash;
+    for (i = 0; i < str.length; i++) {
+        chr   = str.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash.toString(16);
+}
+
+
+export function encodeWord(word) {
+    return btoa(encodeURIComponent(word));
+}
+export function decodeWord(encoded) {
+    try {
+        return decodeURIComponent(atob(encoded));
+    } catch {
+        return '';
+    }
+}
+
+export function mapWordSourceToWords(wordSource) {
+    const allw =            allWords.map(word => word.toUpperCase());
+    const cmw  =         commonWords.map(word => word.toUpperCase());
+    const prvw = previousWordleWords.map(word => word.toUpperCase());
+    if (wordSource === 'custom') {
+        const customWords = localStorage.getItem('customWordList');
+        if (customWords) {
+            return customWords.split(',').map(word => word.trim().toUpperCase());
+        }
+        return [];
+    } else if (wordSource === 'common') {
+        return [cmw, cmw];
+    } else if (wordSource === 'previous') {
+        return [cmw, prvw];
+    } else if (wordSource === 'all') {
+        return [allw, allw];
+    }
+    return [allw, allw]; // Default to all words if no valid source is provided
 }

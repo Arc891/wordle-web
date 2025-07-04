@@ -1,9 +1,7 @@
 // Create a 6x5 grid (like Wordle) and add it to the page
-import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton, createDropdown, addHintButtons } from './setup.js';
-import { commonWords } from './words/common-words.js';
-import { previousWordleWords } from './words/previous-wordle-words.js';
-import { allWords } from './words/all-words.js';
-import { hexToRgb, clearGrid } from './utils.js';
+import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton, createDropdown, 
+         addHintButtons, addWordSourceBelowTitle, addGameButtons, removeGameContent } from './setup.js';
+import { hexToRgb, clearGrid, simpleHash, encodeWord, decodeWord, mapWordSourceToWords } from './utils.js';
 import { countMostCommonLetters, solveWordle } from './solve-wordle.js';
 import { LetterStatus } from './utils.js';
 
@@ -59,10 +57,9 @@ function getLetterStatuses(guess, word) {
 
 async function checkGuess(guess, word, currentRow) {
     const statuses = getLetterStatuses(guess, word);
-    
+
     for (let i = 0; i < WORD_LENGTH; i++) {
         const status = statuses[i];
-        
         const square = gridContainer.children[i + currentRow * WORD_LENGTH];
         console.debug(`Letter: ${guess[i]}, Status: ${status}, square: ${square.textContent}`);
 
@@ -109,6 +106,7 @@ async function checkGuess(guess, word, currentRow) {
     });
 }
 
+
 function addOptionToRestartButton() {
     const restartButton = document.createElement('button');
     restartButton.textContent = 'Restart Game';
@@ -127,28 +125,30 @@ function addOptionToRestartButton() {
         margin: '20px auto 0 auto', // Center horizontally
     }
     Object.assign(restartButton.style, resetButtonStyle);
-
+    
     // Insert the button just before the keyboard to keep it centered with the keyboard
     keyboardContainer.parentNode.insertBefore(restartButton, keyboardContainer);
     function restartOnInputR(event) {
         if (event.key === 'r' || event.key === 'R') {
-            restart();
+            restartFromBtn();
         }
     }
     
-    function restart() {
+    function restartFromBtn() {
         clearGrid(gridContainer, keyboardContainer);
-        playerInput();
         console.log('Game restarted');
         document.removeEventListener('keydown', restartOnInputR); // Remove the restart event listener
         document.body.removeChild(restartButton);
+        localStorage.removeItem('wordleGameState');
+        playerInput(false, 0);
     }
 
-    restartButton.addEventListener('click', restart);
+    restartButton.addEventListener('click', restartFromBtn);
     document.addEventListener('keydown', restartOnInputR);
 
     document.body.appendChild(restartButton);
 }
+
 
 function showWordIsInvalid(currentRow) {
     const squares = Array.from(gridContainer.children);
@@ -190,14 +190,45 @@ function getHints(type) {
     }
 }
 
+function giveUp() {
+    alert(`Game Over! The word was: ${word}`);
+    document.removeEventListener('keydown', playGameHandler); 
+    clearGrid(gridContainer, keyboardContainer);
+    localStorage.removeItem('wordleGameState');
+    playerInput(false, 0);
+}
 
-function playerInput() {
-    currentRow = 0;
+function reset() {
+    localStorage.removeItem('wordleGameState');
+    window.history.replaceState({}, '', `${window.location.pathname}`);
+    removeGameContent(gridContainer, keyboardContainer);
+    showWordSetSelection();
+}
+
+function giveUpOrReset(type) {
+    if (type === 'reset') {
+        reset();
+    } else {
+        giveUp();
+    }
+}
+
+
+function playerInput(useURLWord = false, startRow = 0) {
+    currentRow = startRow;
     currentCol = 0;
     let gameDone = false;
+    console.log(`Starting game from row ${currentRow}, column ${currentCol}`);
 
-    clearGrid(gridContainer, keyboardContainer);
-    word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)]; // Randomly select a word from the list
+    const params = new URLSearchParams(window.location.search);
+    if (!useURLWord) {
+        // Pick a random word as usual
+        word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)];
+        // Update the URL for sharing (encode)
+        params.set('word', encodeWord(word));
+        params.set('wordSource', wordSource);
+        window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+    }
 
     if (playGameHandler) {
         document.removeEventListener('keydown', playGameHandler);
@@ -236,27 +267,35 @@ function playerInput() {
                     currentRow++;
                     currentCol = 0;
                 }
+
+                saveGameState();
             });
         }
     }
     document.addEventListener('keydown', playGameHandler);
 }
 
-function startGame() {
-    // Append small text below h1 to show word source
-    const wordSourceText = document.createElement('p');
-    wordSourceText.textContent = `Words: ${wordSource}`;
-    wordSourceText.style.textAlign = 'center';
-    wordSourceText.style.fontSize = '0.8rem';
-    wordSourceText.style.color = '#666';
-    wordSourceText.style.marginTop = '-20px';
-    wordSourceText.style.marginBottom = '-5px';
-    document.body.appendChild(wordSourceText);
 
+function startGame(clear = true, useURLWord = false) {
+    addWordSourceBelowTitle(wordSource);
     document.body.appendChild(gridContainer);
     document.body.appendChild(keyboardContainer);
     addHintButtons(keyboardContainer, getHints);
-    playerInput();
+    addGameButtons(keyboardContainer, giveUpOrReset);
+    
+    if (clear) {
+        console.log("Clear is true, clearing...");
+        clearGrid(gridContainer, keyboardContainer);
+    }
+
+    let startRow = 0;
+    if (localStorage.getItem('wordleGameState')) {
+        const savedState = JSON.parse(localStorage.getItem('wordleGameState'));
+        startRow = savedState.state.currentRow;
+        console.debug(`Resuming game from row ${startRow}`);
+    }
+
+    playerInput(useURLWord, startRow);
 }
 
 function showWordSetSelection() {
@@ -276,27 +315,24 @@ function showWordSetSelection() {
 
     btnCommon.onclick = () => {
         // Use common words from common-words.js
-        wordsToGuess = commonWords.map(w => w.toUpperCase());
-        wordsToUse = wordsToGuess; // Use the same words for guessing
         wordSource = 'common';
+        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
         document.body.removeChild(container);
         startGame();
     };
 
     btnPrev.onclick = () => {
         // Use previously used words from previous-wordle-words.js
-        wordsToGuess = previousWordleWords.map(w => w.toUpperCase());
-        wordsToUse = commonWords.map(w => w.toUpperCase()); // Use common words for guessing
         wordSource = 'previous';
+        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource); 
         document.body.removeChild(container);
         startGame();
     };
 
     btnAll.onclick = () => {
         // Use all words from all-words.js
-        wordsToGuess = allWords.map(w => w.toUpperCase());
-        wordsToUse = wordsToGuess; // Use the same words for guessing
         wordSource = 'all';
+        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
         document.body.removeChild(container);
         startGame();
     };
@@ -307,7 +343,60 @@ function showWordSetSelection() {
     document.body.appendChild(container);
 }
 
-// Initialize player input
+
+function saveGameState() {
+    const state = {
+        word: encodeWord(word),
+        currentRow,
+        currentCol,
+        guesses: Array.from({ length: currentRow }, (_, row) =>
+            Array.from({ length: WORD_LENGTH }, (_, col) =>
+                gridContainer.children[row * WORD_LENGTH + col].textContent
+            ).join('')
+        ),
+        wordSource,
+    };
+    // Add a simple hash for integrity
+    const stateStr = JSON.stringify(state);
+    const hash = simpleHash(stateStr);
+    localStorage.setItem('wordleGameState', JSON.stringify({ state, hash }));
+}
+
+function loadGameState() {
+    const saved = JSON.parse(localStorage.getItem('wordleGameState'));
+    if (!saved || !saved.state || !saved.hash) return false;
+    const stateStr = JSON.stringify(saved.state);
+    if (simpleHash(stateStr) !== saved.hash) {
+        // Tampering detected
+        localStorage.removeItem('wordleGameState');
+        return false;
+    }
+    const state = saved.state;
+    word = decodeWord(state.word).toUpperCase();
+    currentRow = state.currentRow;
+    currentCol = state.currentCol;
+    wordSource = state.wordSource;
+    [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
+
+    // Restore guesses to the grid (set letters first)
+    state.guesses.forEach((guess, row) => {
+        for (let col = 0; col < guess.length; col++) {
+            addLetterToSquare(guess[col], row, col);
+        }
+    });
+
+    // Now animate and color only for completed guesses
+    state.guesses.forEach((guess, row) => {
+        if (guess.length === WORD_LENGTH) {
+            checkGuess(guess.split(''), word, row);
+        }
+    });
+
+    return true;
+}
+
+
+// Start page load and game setup
 document.addEventListener('DOMContentLoaded', () => {
     // Add a title to the grid
     const title = document.createElement('h1');
@@ -316,5 +405,39 @@ document.addEventListener('DOMContentLoaded', () => {
     title.style.marginTop = '0px';
     document.body.appendChild(title);
     applyBodyStyles();
+    // If wordSource is already set in localStorage, start the game directly
+    if (localStorage.getItem('wordleGameState')) {
+        if (loadGameState()) {
+            startGame(false, false);
+            return;
+        }
+    } 
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('word') && params.has('wordSource')) {
+        if (!params.get('word').length === WORD_LENGTH) {
+            console.warn(`Invalid word length in URL: ${params.get('word')}. Expected ${WORD_LENGTH} characters.`);
+            showWordSetSelection();
+            return;
+        }
+        // Use the word from the URL (decode)
+        console.debug(`Using word from URL: ${params.get('word')}`);
+        word = decodeWord(params.get('word')).toUpperCase();
+        wordSource = params.get('wordSource') || 'common'; // Default to 'common' if not specified
+        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
+
+        if (!wordsToUse.includes(word)) {
+            console.warn(`The word from URL (${word}) is not in the selected word source (${wordSource}). Showing word set selection.`);
+            showWordSetSelection();
+            return;
+        }
+
+        console.debug(`Using word source from URL: ${wordSource}`);
+        startGame(true, true);
+        return;
+    }
+
+    // Otherwise, show the word set selection
+    console.debug('No saved game state found or tampered with. Showing word set selection.');
     showWordSetSelection();
 });
