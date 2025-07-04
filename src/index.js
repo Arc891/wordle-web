@@ -128,8 +128,10 @@ function addOptionToRestartButton() {
     
     // Insert the button just before the keyboard to keep it centered with the keyboard
     keyboardContainer.parentNode.insertBefore(restartButton, keyboardContainer);
-    function restartOnInputR(event) {
-        if (event.key === 'r' || event.key === 'R') {
+    function restartOnInputs(event) {
+        const inputsForReset = ['r', 'R', 'Enter', ' '];
+        console.log(event.key)
+        if (inputsForReset.includes(event.key)) {
             restartFromBtn();
         }
     }
@@ -137,14 +139,14 @@ function addOptionToRestartButton() {
     function restartFromBtn() {
         clearGrid(gridContainer, keyboardContainer);
         console.log('Game restarted');
-        document.removeEventListener('keydown', restartOnInputR); // Remove the restart event listener
+        document.removeEventListener('keydown', restartOnInputs); // Remove the restart event listener
         document.body.removeChild(restartButton);
         localStorage.removeItem('wordleGameState');
         playerInput(false, 0);
     }
 
     restartButton.addEventListener('click', restartFromBtn);
-    document.addEventListener('keydown', restartOnInputR);
+    document.addEventListener('keydown', restartOnInputs);
 
     document.body.appendChild(restartButton);
 }
