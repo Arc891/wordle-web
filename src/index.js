@@ -225,8 +225,8 @@ function playerInput(useURLWord = false, startRow = 0) {
         // Pick a random word as usual
         word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)];
         // Update the URL for sharing (encode)
-        params.set('word', encodeWord(word));
-        params.set('wordSource', wordSource);
+        params.set('gid', encodeWord(word));
+        params.set('ws', wordSource);
         window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
     }
 
@@ -256,6 +256,7 @@ function playerInput(useURLWord = false, startRow = 0) {
                     alert('Congratulations! You guessed the word!');
                     addOptionToRestartButton();
                     document.removeEventListener('keydown', playGameHandler); // Remove event listener to stop further input
+                    currentRow++; // Save winning into state as well
                 } 
                 else if (currentRow === ROWS - 1) {
                     alert(`Game Over! The word was: ${word}`);
@@ -378,6 +379,11 @@ function loadGameState() {
     wordSource = state.wordSource;
     [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
 
+    const params = new URLSearchParams(window.location.search);
+    params.set('gid', encodeWord(word));
+    params.set('ws', wordSource);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+
     // Restore guesses to the grid (set letters first)
     state.guesses.forEach((guess, row) => {
         for (let col = 0; col < guess.length; col++) {
@@ -408,22 +414,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // If wordSource is already set in localStorage, start the game directly
     if (localStorage.getItem('wordleGameState')) {
         if (loadGameState()) {
-            startGame(false, false);
+            startGame(false, true);
             return;
         }
     } 
 
     const params = new URLSearchParams(window.location.search);
-    if (params.has('word') && params.has('wordSource')) {
-        if (!params.get('word').length === WORD_LENGTH) {
-            console.warn(`Invalid word length in URL: ${params.get('word')}. Expected ${WORD_LENGTH} characters.`);
+    if (params.has('gid') && params.has('ws')) {
+        if (!params.get('gid').length === WORD_LENGTH) {
+            console.warn(`Invalid word length in URL: ${params.get('gid')}. Expected ${WORD_LENGTH} characters.`);
             showWordSetSelection();
             return;
         }
         // Use the word from the URL (decode)
-        console.debug(`Using word from URL: ${params.get('word')}`);
-        word = decodeWord(params.get('word')).toUpperCase();
-        wordSource = params.get('wordSource') || 'common'; // Default to 'common' if not specified
+        console.debug(`Using word from URL: ${params.get('gid')}`);
+        word = decodeWord(params.get('gid')).toUpperCase();
+        wordSource = params.get('ws') || 'common'; // Default to 'common' if not specified
         [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
 
         if (!wordsToUse.includes(word)) {
