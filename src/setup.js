@@ -138,6 +138,120 @@ export function createSelectionButton(text) {
     return btn;
 }
 
+export function createHintButton(icon, ariaLabel) {
+    const btn = document.createElement('button');
+    btn.innerHTML = icon;
+    btn.setAttribute('aria-label', ariaLabel);
+    Object.assign(btn.style, {
+        fontSize: '1.5rem',
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: '50%',
+        width: '40px',
+        height: '40px',
+        margin: '8px',
+        cursor: 'pointer',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.2s'
+    });
+    btn.onmouseenter = () => btn.style.background = '#f0f0f0';
+    btn.onmouseleave = () => btn.style.background = '#fff';
+    return btn;
+}
+
+export function addHintButtons(container, getHints) {
+    // Remove old buttons if present
+    document.getElementById('hint-btn-row')?.remove();
+
+    const btnRow = document.createElement('div');
+    btnRow.id = 'hint-btn-row';
+    btnRow.style.display = 'flex';
+    btnRow.style.justifyContent = 'center';
+    btnRow.style.gap = '32px';
+    btnRow.style.margin = '10px auto 0 auto';
+    btnRow.style.width = container.style.width || 'max-content';
+
+    // Helper to wrap button and label
+    function buttonWithLabel(btn, labelText) {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.alignItems = 'center';
+        wrapper.appendChild(btn);
+
+        const label = document.createElement('div');
+        label.textContent = labelText;
+        label.style.fontSize = '0.85rem';
+        label.style.color = '#444';
+        label.style.marginTop = '2px';
+        wrapper.appendChild(label);
+
+        return wrapper;
+    }
+
+    // Lightbulb (letters) and question mark (words)
+    const lightbulbBtn = createHintButton('💡', 'Show most common letters');
+    const questionBtn = createHintButton('❓', 'Show possible words');
+
+    lightbulbBtn.onclick = () => getHints('letters');
+    questionBtn.onclick = () => getHints('words');
+
+    btnRow.appendChild(buttonWithLabel(lightbulbBtn, 'Hint'));
+    btnRow.appendChild(buttonWithLabel(questionBtn, 'Answers'));
+
+    // Insert after keyboard
+    container.parentNode.insertBefore(btnRow, container.nextSibling);
+}
+
+
+export function createDropdown(container, content, id) {
+    // Remove any existing dropdown with this id
+    const existing = document.getElementById(id);
+    if (existing) existing.remove();
+
+    const dropdown = document.createElement('div');
+    dropdown.id = id;
+    Object.assign(dropdown.style, {
+        width: container.offsetWidth ? `${container.offsetWidth}px` : '400px',
+        maxWidth: '100%',
+        margin: '10px auto',
+        background: '#fff',
+        border: '1.5px solid #007bff',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+        padding: '16px 16px 8px 16px',
+        position: 'relative',
+        zIndex: 100,
+        textAlign: 'left',
+        fontFamily: 'Arial, sans-serif'
+    });
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    Object.assign(closeBtn.style, {
+        position: 'absolute',
+        top: '8px',
+        right: '12px',
+        border: 'none',
+        background: 'transparent',
+        fontSize: '1.2rem',
+        cursor: 'pointer',
+        color: '#007bff'
+    });
+    closeBtn.onclick = () => dropdown.remove();
+
+    dropdown.appendChild(closeBtn);
+    dropdown.appendChild(content);
+
+    // Insert below the keyboard
+    container.parentNode.insertBefore(dropdown, container.nextSibling);
+    return dropdown;
+}
+
 
 export function applyBodyStyles() {
     Object.assign(document.body.style, {

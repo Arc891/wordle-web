@@ -1,5 +1,5 @@
 // Create a 6x5 grid (like Wordle) and add it to the page
-import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton } from './setup.js';
+import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton, createDropdown, addHintButtons } from './setup.js';
 import { commonWords } from './words/common-words.js';
 import { previousWordleWords } from './words/previous-wordle-words.js';
 import { allWords } from './words/all-words.js';
@@ -165,6 +165,32 @@ function showWordIsInvalid(currentRow) {
 }
 
 
+function getHints(type) {
+    const possibleWords = solveWordle(gridContainer, currentRow, wordSource);
+
+    // Remove both dropdowns before showing a new one
+    document.getElementById('dropdown-words')?.remove();
+    document.getElementById('dropdown-letters')?.remove();
+
+    if (type === 'words') {
+        const content = document.createElement('div');
+        content.innerHTML = `<strong>Possible words (${possibleWords.length}):</strong><br>` +
+            `<div style="max-height:180px;overflow:auto;font-size:1.1rem;line-height:1.6;">${possibleWords.join(', ')}</div>`;
+        createDropdown(keyboardContainer, content, 'dropdown-words');
+    } else if (type === 'letters') {
+        const letterCounts = countMostCommonLetters(possibleWords);
+        const sortedLetterCounts = Object.entries(letterCounts).sort((a, b) => b[1] - a[1]);
+        const content = document.createElement('div');
+        content.innerHTML = `<strong>Most common letters:</strong><br>` +
+            `<ol style="margin:0;padding-left:1.2em;font-size:1.1rem;">` +
+            sortedLetterCounts.slice(0, 10).map(([letter, count]) =>
+                `<li><b>${letter}</b>: ${count}</li>`).join('') +
+            `</ol>`;
+        createDropdown(keyboardContainer, content, 'dropdown-letters');
+    }
+}
+
+
 function playerInput() {
     currentRow = 0;
     currentCol = 0;
@@ -210,17 +236,7 @@ function playerInput() {
                     currentRow++;
                     currentCol = 0;
                 }
-
-                console.log(`Checking words after guess: ${guess.join('')} at row ${currentRow}`);
-                const possibleWords = solveWordle(gridContainer, currentRow, wordSource);
-                console.log(`Possible words after guess: ${possibleWords.length}`);
-                console.debug(possibleWords);
-                const letterCounts = countMostCommonLetters(possibleWords);
-                console.log(letterCounts);
-                const sortedLetterCounts = Object.entries(letterCounts).sort((a,b) => b[1] - a[1]);
-                console.log(`Most common letters: ${sortedLetterCounts.slice(0,10)}`);
             });
-
         }
     }
     document.addEventListener('keydown', playGameHandler);
@@ -239,6 +255,7 @@ function startGame() {
 
     document.body.appendChild(gridContainer);
     document.body.appendChild(keyboardContainer);
+    addHintButtons(keyboardContainer, getHints);
     playerInput();
 }
 
