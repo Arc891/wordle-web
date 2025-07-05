@@ -1,6 +1,7 @@
-// Create a 6x5 grid (like Wordle) and add it to the page
-import { createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton, createDropdown, 
-         addHintButtons, addWordSourceBelowTitle, addGameButtons, removeGameContent } from './setup.js';
+import {
+    createGridContainer, applyBodyStyles, createKeyboardContainer, createSelectionButton, createDropdown,
+    addHintButtons, addWordSourceBelowTitle, addGameButtons, removeGameContent
+} from './setup.js';
 import { hexToRgb, clearGrid, simpleHash, encodeWord, decodeWord, mapWordSourceToWords } from './utils.js';
 import { countMostCommonLetters, solveWordle } from './solve-wordle.js';
 import { LetterStatus } from './utils.js';
@@ -18,6 +19,7 @@ let wordsToGuess = [];
 let wordsToUse = [];
 let wordSource = '';
 let playGameHandler = null;
+let playGameHandlerActive = false;
 
 
 function addLetterToSquare(letter, row, col) {
@@ -79,30 +81,29 @@ async function checkGuess(guess, word, currentRow) {
         }, i * 350);
     }
 
-    
+
     // Wait for the last letter to finish its transition before continuing
     const timeout = new Promise(resolve => {
         setTimeout(resolve, WORD_LENGTH * 350); // Wait for the last transition to finish
     });
-    
+
     await timeout;
-    
+
     // Set keyboard keys based on the guess
     const keyboardKeys = Array.from(keyboardContainer.querySelectorAll('button'));
     guess.forEach((letter, index) => {
         const keyButton = keyboardKeys.find(button => button.textContent.toUpperCase() === letter.toUpperCase());
         if (keyButton) {
-            if (keyButton.style.backgroundColor === hexToRgb(LetterStatus.CORRECT) || 
+            if (keyButton.style.backgroundColor === hexToRgb(LetterStatus.CORRECT) ||
                 keyButton.style.backgroundColor === hexToRgb(LetterStatus.PRESENT) && statuses[index] === LetterStatus.ABSENT ||
                 keyButton.style.backgroundColor === hexToRgb(statuses[index])) {
                 return;
             }
 
-            
             keyButton.style.backgroundColor = statuses[index];
             keyButton.style.color = '#fff'; // Change text color to white for better contrast
             keyButton.style.transition = 'background-color 0.3s, color 0.3s'; // Add transition for keyboard keys
-        }   
+        }
     });
 }
 
@@ -125,7 +126,7 @@ function addOptionToRestartButton() {
         margin: '20px auto 0 auto', // Center horizontally
     }
     Object.assign(restartButton.style, resetButtonStyle);
-    
+
     // Insert the button just before the keyboard to keep it centered with the keyboard
     keyboardContainer.parentNode.insertBefore(restartButton, keyboardContainer);
     function restartOnInputs(event) {
@@ -135,7 +136,7 @@ function addOptionToRestartButton() {
             restartFromBtn();
         }
     }
-    
+
     function restartFromBtn() {
         clearGrid(gridContainer, keyboardContainer);
         console.log('Game restarted');
@@ -194,7 +195,7 @@ function getHints(type) {
 
 function giveUp() {
     alert(`Game Over! The word was: ${word}`);
-    document.removeEventListener('keydown', playGameHandler); 
+    document.removeEventListener('keydown', playGameHandler);
     clearGrid(gridContainer, keyboardContainer);
     localStorage.removeItem('wordleGameState');
     playerInput(false, 0);
@@ -208,11 +209,25 @@ function reset() {
 }
 
 function giveUpOrReset(type) {
+    if (!playGameHandlerActive) {
+        console.warn(`Please wait until word has been checked before trying to ${type}`);
+        return;
+    }
     if (type === 'reset') {
         reset();
     } else {
         giveUp();
     }
+}
+
+function removePlayGameHandler() {
+    document.removeEventListener('keydown', playGameHandler);
+    playGameHandlerActive = false;
+}
+
+function addPlayGameHandler() {
+    document.addEventListener('keydown', playGameHandler);
+    playGameHandlerActive = true;
 }
 
 
@@ -232,13 +247,12 @@ function playerInput(useURLWord = false, startRow = 0) {
         window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
     }
 
-    if (playGameHandler) {
-        document.removeEventListener('keydown', playGameHandler);
-    }
+    if (playGameHandler)
+        removePlayGameHandler();
 
     console.debug(`The word to guess is: ${word}`); // For debugging purposes
 
-    playGameHandler = function(event) {
+    playGameHandler = function (event) {
         if (event.key.length === 1 && event.key.match(/[a-zA-Z]/) && currentCol < WORD_LENGTH) {
             addLetterToSquare(event.key, currentRow, currentCol);
             currentCol++;
@@ -246,10 +260,12 @@ function playerInput(useURLWord = false, startRow = 0) {
             currentCol--;
             addLetterToSquare('', currentRow, currentCol);
         } else if (event.key === 'Enter' && !gameDone) {
+            removePlayGameHandler(); // Remove event listener to stop further input avoiding removal/tomfoolery during async checkGuess.
             const guess = Array.from({ length: WORD_LENGTH }, (_, i) => gridContainer.children[currentRow * WORD_LENGTH + i].textContent);
 
             if (currentCol < WORD_LENGTH || !wordsToUse.includes(guess.join(''))) {
                 showWordIsInvalid(currentRow);
+                addPlayGameHandler(); // Reinstate event listener to continue input
                 return;
             }
 
@@ -257,25 +273,24 @@ function playerInput(useURLWord = false, startRow = 0) {
                 if (guess.join('') === word) {
                     alert('Congratulations! You guessed the word!');
                     addOptionToRestartButton();
-                    document.removeEventListener('keydown', playGameHandler); // Remove event listener to stop further input
                     currentRow++; // Save winning into state as well
-                } 
+                }
                 else if (currentRow === ROWS - 1) {
                     alert(`Game Over! The word was: ${word}`);
                     addOptionToRestartButton();
-                    document.removeEventListener('keydown', playGameHandler); // Remove event listener to stop further input
                 }
                 else {
                     console.debug(`Current guess: ${guess.join('')}, Target word: ${word}`);
                     currentRow++;
                     currentCol = 0;
+                    addPlayGameHandler();
                 }
 
                 saveGameState();
             });
         }
     }
-    document.addEventListener('keydown', playGameHandler);
+    addPlayGameHandler();
 }
 
 
@@ -285,7 +300,7 @@ function startGame(clear = true, useURLWord = false) {
     document.body.appendChild(keyboardContainer);
     addHintButtons(keyboardContainer, getHints);
     addGameButtons(keyboardContainer, giveUpOrReset);
-    
+
     if (clear) {
         console.log("Clear is true, clearing...");
         clearGrid(gridContainer, keyboardContainer);
@@ -313,7 +328,7 @@ function showWordSetSelection() {
     container.appendChild(info);
 
     const btnCommon = createSelectionButton('Common Words');
-    const btnPrev = createSelectionButton('Previous Words');    
+    const btnPrev = createSelectionButton('Previous Words');
     const btnAll = createSelectionButton('All Words');
 
     btnCommon.onclick = () => {
@@ -327,7 +342,7 @@ function showWordSetSelection() {
     btnPrev.onclick = () => {
         // Use previously used words from previous-wordle-words.js
         wordSource = 'previous';
-        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource); 
+        [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
         document.body.removeChild(container);
         startGame();
     };
@@ -419,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startGame(false, true);
             return;
         }
-    } 
+    }
 
     const params = new URLSearchParams(window.location.search);
     if (params.has('gid') && params.has('ws')) {
