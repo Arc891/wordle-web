@@ -20,6 +20,7 @@ let wordsToUse = [];
 let wordSource = '';
 let playGameHandler = null;
 let playGameHandlerActive = false;
+let gameDone = false;
 
 
 function addLetterToSquare(letter, row, col) {
@@ -194,7 +195,7 @@ function getHints(type) {
 }
 
 function giveUp() {
-    alert(`Game Over! The word was: ${word}`);
+    if (!gameDone) alert(`Game Over! The word was: ${word}`);
     document.removeEventListener('keydown', playGameHandler);
     clearGrid(gridContainer, keyboardContainer);
     localStorage.removeItem('wordleGameState');
@@ -234,7 +235,7 @@ function addPlayGameHandler() {
 function playerInput(useURLWord = false, startRow = 0) {
     currentRow = startRow;
     currentCol = 0;
-    let gameDone = false;
+    gameDone = false;
     console.log(`Starting game from row ${currentRow}, column ${currentCol}`);
 
     const params = new URLSearchParams(window.location.search);
@@ -274,6 +275,7 @@ function playerInput(useURLWord = false, startRow = 0) {
                     alert('Congratulations! You guessed the word!');
                     addOptionToRestartButton();
                     currentRow++; // Save winning into state as well
+                    gameDone = true;
                 }
                 else if (currentRow === ROWS - 1) {
                     alert(`Game Over! The word was: ${word}`);
@@ -284,6 +286,7 @@ function playerInput(useURLWord = false, startRow = 0) {
                     currentRow++;
                     currentCol = 0;
                     addPlayGameHandler();
+                    gameDone = true;
                 }
 
                 saveGameState();
@@ -373,6 +376,7 @@ function saveGameState() {
             ).join('')
         ),
         wordSource,
+        gameDone,
     };
     // Add a simple hash for integrity
     const stateStr = JSON.stringify(state);
