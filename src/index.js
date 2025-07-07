@@ -280,13 +280,13 @@ function playerInput(useURLWord = false, startRow = 0) {
                 else if (currentRow === ROWS - 1) {
                     alert(`Game Over! The word was: ${word}`);
                     addOptionToRestartButton();
+                    gameDone = true;
                 }
                 else {
                     console.debug(`Current guess: ${guess.join('')}, Target word: ${word}`);
                     currentRow++;
                     currentCol = 0;
                     addPlayGameHandler();
-                    gameDone = true;
                 }
 
                 saveGameState();
