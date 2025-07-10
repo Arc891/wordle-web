@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-REGISTRY="localhost:5000"
+REGISTRY="registry.arc8.dev"
 IMAGE_NAME="wordle-web"
 CONTAINER_NAME="wordle-web"
-VERSION_FILE="VERSION"
+VERSION_FILE="package.json"
 
 # Read current version
 if [ ! -f "$VERSION_FILE" ]; then

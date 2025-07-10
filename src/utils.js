@@ -1,6 +1,6 @@
-import { allWords } from "./words/all-words";
-import { commonWords } from "./words/common-words";
-import { previousWordleWords } from "./words/previous-wordle-words";
+import { allWords } from "./data/words/all-words.js";
+import { commonWords } from "./data/words/common-words.js";
+import { previousWordleWords } from "./data/words/previous-wordle-words.js";
 
 export const LetterStatus = {
     CORRECT: '#6baa64',
