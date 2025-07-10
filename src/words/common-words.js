@@ -930,6 +930,7 @@ export const commonWords = [
   "climb",
   "clime",
   "cling",
+  "clint",
   "clink",
   "clips",
   "cloak",
