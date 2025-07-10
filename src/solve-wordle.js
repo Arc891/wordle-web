@@ -1,8 +1,8 @@
-import { LetterStatus, letterStatusToName } from "./utils";
-import { rgbToHex } from "./utils";
-import { commonWords } from "./words/common-words";
-import { previousWordleWords } from "./words/previous-wordle-words";
-import { allWords } from "./words/all-words";
+import { LetterStatus, letterStatusToName } from "./utils.js";
+import { rgbToHex } from "./utils.js";
+import { commonWords } from "./words/common-words.js";
+import { previousWordleWords } from "./words/previous-wordle-words.js";
+import { allWords } from "./words/all-words.js";
 
 
 export function solveWordle(gridContainer, currentRow, wordSource = 'common') {
