@@ -51,13 +51,26 @@ export function createPlayerInputHandler(
                     addRestartButton(keyboardContainer, () => {
                         clearGrid(gridContainer, keyboardContainer);
                         localStorage.removeItem('wordleGameState');
+                        // Remove the current game handler first
+                        document.removeEventListener('keydown', playGameHandler);
+                        
+                        // Get current state before clearing it
+                        const currentState = gameStateRef();
+                        
+                        // Clear the word from state to force a new word selection
                         updateGameState({ 
+                            word: '',
                             currentRow: 0, 
                             currentCol: 0, 
                             gameDone: false,
-                            playGameHandlerActive: true 
+                            playGameHandlerActive: false 
                         });
-                        document.addEventListener('keydown', playGameHandler);
+                        
+                        // Start a new game with a new word using preserved state values
+                        playerInput(false, 0, gridContainer, keyboardContainer, 
+                            currentState.wordsToGuess, currentState.wordsToUse, 
+                            currentState.wordSource, WORD_LENGTH, ROWS, 
+                            updateGameState.gameState, updateGameState);
                     });
                     updateGameState({ 
                         currentRow: currentRow + 1, 
@@ -69,13 +82,26 @@ export function createPlayerInputHandler(
                     addRestartButton(keyboardContainer, () => {
                         clearGrid(gridContainer, keyboardContainer);
                         localStorage.removeItem('wordleGameState');
+                        // Remove the current game handler first
+                        document.removeEventListener('keydown', playGameHandler);
+                        
+                        // Get current state before clearing it
+                        const currentState = gameStateRef();
+                        
+                        // Clear the word from state to force a new word selection
                         updateGameState({ 
+                            word: '',
                             currentRow: 0, 
                             currentCol: 0, 
                             gameDone: false,
-                            playGameHandlerActive: true 
+                            playGameHandlerActive: false 
                         });
-                        document.addEventListener('keydown', playGameHandler);
+                        
+                        // Start a new game with a new word using preserved state values
+                        playerInput(false, 0, gridContainer, keyboardContainer, 
+                            currentState.wordsToGuess, currentState.wordsToUse, 
+                            currentState.wordSource, WORD_LENGTH, ROWS, 
+                            updateGameState.gameState, updateGameState);
                     });
                     updateGameState({ gameDone: true });
                 }
@@ -141,11 +167,15 @@ export function startGame(
                 currentState.playGameHandler, 
                 gridContainer, 
                 keyboardContainer, 
-                (useURL, startRow) => playerInput(
-                    useURL, startRow, gridContainer, keyboardContainer, 
-                    currentState.wordsToGuess, currentState.wordsToUse, currentState.wordSource, 
-                    WORD_LENGTH, ROWS, currentState, updateGameState
-                )
+                (useURL, startRow) => {
+                    // Clear the word state to force new word selection
+                    updateGameState({ word: '' });
+                    playerInput(
+                        useURL, startRow, gridContainer, keyboardContainer, 
+                        currentState.wordsToGuess, currentState.wordsToUse, currentState.wordSource, 
+                        WORD_LENGTH, ROWS, updateGameState.gameState, updateGameState
+                    );
+                }
             )
         );
     });
@@ -185,12 +215,26 @@ export function playerInput(
     let word = gameState.word;
     
     console.log(`Starting game from row ${currentRow}, column ${currentCol}`);
+    
+    // Ensure we have valid word arrays
+    if (!wordsToGuess || !wordsToUse) {
+        console.error('Missing word arrays, cannot start game');
+        return;
+    }
 
     const params = new URLSearchParams(window.location.search);
-    if (!useURLWord && !word) {
-        // Pick a random word as usual
+    if (!useURLWord) {
+        // Pick a random word when not using URL word (including restarts)
         word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)];
         // Update the URL for sharing (encode)
+        params.set('gid', encodeWord(word));
+        params.set('ws', wordSource);
+        window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+        console.log(`New word selected: ${word}`);
+    } else if (!word) {
+        // If using URL word but no word in state, this shouldn't happen but let's handle it
+        console.warn('URL word expected but no word found in state');
+        word = wordsToGuess[Math.floor(Math.random() * wordsToGuess.length)];
         params.set('gid', encodeWord(word));
         params.set('ws', wordSource);
         window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
@@ -218,6 +262,7 @@ export function playerInput(
         currentRow: updateGameState.gameState.currentRow,
         currentCol: updateGameState.gameState.currentCol,
         wordsToUse: updateGameState.gameState.wordsToUse,
+        wordsToGuess: updateGameState.gameState.wordsToGuess,
         gameDone: updateGameState.gameState.gameDone,
         wordSource: updateGameState.gameState.wordSource
     });
