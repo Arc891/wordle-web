@@ -13,8 +13,8 @@ This is a simple Wordle game implemented in JavaScript, HTML, and CSS. The game 
     - all words (14.8k)
 
 ## Future features
+- [x] Shareable links to words to guess with friends
+- [x] Wordle Solver
 - [ ] Custom length words
-- [ ] Shareable links to words to guess with friends
 - [ ] Custom words to guess
 - [ ] Save personal statistics
-- [ ] Wordle Solver
