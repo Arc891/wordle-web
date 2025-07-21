@@ -89,8 +89,8 @@ function initializeApp() {
     // Check for URL parameters
     const params = new URLSearchParams(window.location.search);
     if (params.has('gid') && params.has('ws')) {
-        if (params.get('gid').length !== WORD_LENGTH) {
-            console.warn(`Invalid word length in URL: ${params.get('gid')}. Expected ${WORD_LENGTH} characters.`);
+        if (decodeWord(params.get('gid')).length !== WORD_LENGTH) {
+            console.warn(`Invalid word length in URL: ${decodeWord(params.get('gid'))}. Expected ${WORD_LENGTH} characters.`);
             showWordSetSelection(gridContainer, keyboardContainer, WORD_LENGTH, ROWS, updateGameState);
             return;
         }
