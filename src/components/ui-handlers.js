@@ -5,20 +5,32 @@ export function addRestartButton(keyboardContainer, restartCallback) {
     const restartButton = document.createElement('button');
     restartButton.textContent = 'Restart Game';
     const resetButtonStyle = {
-        padding: '10px 20px',
+        padding: '12px 24px',
         fontSize: '1rem',
         fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
+        fontWeight: '600',
         color: '#fff',
-        backgroundColor: '#007bff',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         border: 'none',
-        borderRadius: '4px',
+        borderRadius: '8px',
         cursor: 'pointer',
         display: 'block',
         textAlign: 'center',
-        margin: '20px auto 0 auto', // Center horizontally
+        margin: '20px auto 0 auto',
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
     }
     Object.assign(restartButton.style, resetButtonStyle);
+    
+    restartButton.addEventListener('mouseenter', () => {
+        restartButton.style.transform = 'translateY(-2px)';
+        restartButton.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+    });
+    
+    restartButton.addEventListener('mouseleave', () => {
+        restartButton.style.transform = 'translateY(0)';
+        restartButton.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+    });
 
     // Insert the button just before the keyboard to keep it centered with the keyboard
     keyboardContainer.parentNode.insertBefore(restartButton, keyboardContainer);
@@ -34,14 +46,21 @@ export function addRestartButton(keyboardContainer, restartCallback) {
     function restartFromBtn() {
         console.log('Game restarted');
         document.removeEventListener('keydown', restartOnInputs); // Remove the restart event listener
-        document.body.removeChild(restartButton);
+        if (restartButton.parentNode) {
+            restartButton.parentNode.removeChild(restartButton);
+        }
         restartCallback();
     }
 
     restartButton.addEventListener('click', restartFromBtn);
     document.addEventListener('keydown', restartOnInputs);
 
-    document.body.appendChild(restartButton);
+    const gameCard = document.getElementById('game-card');
+    if (gameCard) {
+        gameCard.appendChild(restartButton);
+    } else {
+        document.body.appendChild(restartButton);
+    }
 }
 
 export function giveUp(word, gameDone, playGameHandler, gridContainer, keyboardContainer, playerInputCallback) {

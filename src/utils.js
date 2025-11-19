@@ -36,7 +36,7 @@ export function clearGrid(gridContainer, keyboardContainer) {
     for (let i = 0; i < gridContainer.children.length; i++) {
         gridContainer.children[i].textContent = '';
         gridContainer.children[i].style.backgroundColor = '#fff'; // Reset background color
-        gridContainer.children[i].style.border = '1px solid #ccc'; // Reset border color
+        gridContainer.children[i].style.border = '2px solid #d3d6da'; // Reset border color
         gridContainer.children[i].style.transition = 'none'; // Reset transition for immediate effect
         gridContainer.children[i].style.color = '#333'; // Reset text color
     }
@@ -45,7 +45,7 @@ export function clearGrid(gridContainer, keyboardContainer) {
         const rowDiv = keyboardContainer.children[row];
         for (let btn = 0; btn < rowDiv.children.length; btn++) {
             const keyButton = rowDiv.children[btn];
-            keyButton.style.backgroundColor = '#e0e0e0';
+            keyButton.style.backgroundColor = '#ffffff';
             keyButton.style.color = '#333';
             keyButton.style.transition = 'none';
         }

@@ -22,16 +22,19 @@ export function createGridContainer(WORD_LENGTH, ROWS) {
             style: {
                 width: `${squareSize}px`,
                 height: `${squareSize}px`,
-                border: '1px solid #ccc',
+                border: '2px solid #d3d6da',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.5rem',
+                fontSize: '1.8rem',
                 fontFamily: 'Arial, sans-serif',
                 fontWeight: 'bold',
                 color: '#333',
                 background: '#fff',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                borderRadius: '4px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                transition: 'transform 0.1s ease, box-shadow 0.1s ease'
             }
         };
         Object.assign(square, { className: squareProperties.className, textContent: squareProperties.textContent });
@@ -63,31 +66,37 @@ export function createKeyboardContainer(WORD_LENGTH) {
         flexDirection: 'column',
         gap: '8px',
         width: 'max-content',
-        margin: '20px auto'
+        margin: '20px auto',
+        padding: '15px',
+        background: '#f8f9fa',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
     };
 
     const rowStyle = {
         display: 'flex',
         justifyContent: 'center',
-        gap: '8px'
+        gap: '6px'
     };
 
     const buttonStyle = {
-        padding: '10px 14px',
-        width: '20px',
+        padding: '14px 10px',
+        minWidth: '32px',
         textAlign: 'center',
-        fontSize: '1rem',
+        fontSize: '0.95rem',
         fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
+        fontWeight: '600',
         color: '#333',
-        backgroundColor: '#e0e0e0',
-        border: '1px solid #ccc',
+        backgroundColor: '#ffffff',
+        border: '1px solid #d3d6da',
         cursor: 'pointer',
-        transition: 'background-color 0.3s ease',
-        borderRadius: '4px',
+        transition: 'all 0.1s ease',
+        borderRadius: '6px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        userSelect: 'none'
     };
 
     Object.assign(keyboardContainer.style, keyboardContainerStyle);
@@ -99,15 +108,57 @@ export function createKeyboardContainer(WORD_LENGTH) {
         row.forEach((key) => {
             const keyButton = document.createElement('button');
             keyButton.textContent = key === 'Backspace' ? '⌫' : key;
+            keyButton.dataset.key = key;
             Object.assign(keyButton.style, buttonStyle);
 
-            // Make Enter and Backspace a bit wider
+            // Make Enter and Backspace wider
             if (key === 'Enter' || key === 'Backspace') {
-                keyButton.style.flex = '1.5';
-                keyButton.style.minWidth = '60px';
+                keyButton.style.minWidth = '65px';
+                keyButton.style.fontSize = key === 'Enter' ? '0.8rem' : '1.1rem';
             }
 
-            keyButton.addEventListener('click', () => { simulateKeyPress(key); });
+            // Add press effect function
+            function addPressEffect() {
+                keyButton.style.transform = 'scale(0.95)';
+                keyButton.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.2)';
+                keyButton.style.backgroundColor = '#e8e8e8';
+                
+                setTimeout(() => {
+                    keyButton.style.transform = 'scale(1)';
+                    keyButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                    // Only reset background if not colored by game
+                    const currentBg = keyButton.style.backgroundColor;
+                    if (currentBg === 'rgb(232, 232, 232)' || currentBg === '#e8e8e8') {
+                        keyButton.style.backgroundColor = '#ffffff';
+                    }
+                }, 100);
+            }
+
+            // Add hover effects
+            keyButton.addEventListener('mouseenter', () => {
+                if (!keyButton.style.backgroundColor.includes('rgb(120') && 
+                    !keyButton.style.backgroundColor.includes('rgb(202') && 
+                    !keyButton.style.backgroundColor.includes('rgb(107')) {
+                    keyButton.style.backgroundColor = '#f5f5f5';
+                }
+            });
+            
+            keyButton.addEventListener('mouseleave', () => {
+                if (!keyButton.style.backgroundColor.includes('rgb(120') && 
+                    !keyButton.style.backgroundColor.includes('rgb(202') && 
+                    !keyButton.style.backgroundColor.includes('rgb(107')) {
+                    keyButton.style.backgroundColor = '#ffffff';
+                }
+            });
+
+            keyButton.addEventListener('click', () => { 
+                addPressEffect();
+                simulateKeyPress(key); 
+            });
+
+            // Store the press effect function so it can be triggered externally
+            keyButton.triggerPressEffect = addPressEffect;
+
             rowDiv.appendChild(keyButton);
         });
 
@@ -122,19 +173,32 @@ export function createSelectionButton(text) {
     const btn = document.createElement('button');
     btn.textContent = text;
     Object.assign(btn.style, {
-        padding: '10px 20px',
+        padding: '12px 24px',
         fontSize: '1rem',
         fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
+        fontWeight: '600',
         color: '#fff',
-        backgroundColor: '#007bff',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         border: 'none',
-        borderRadius: '4px',
+        borderRadius: '8px',
         cursor: 'pointer',
         display: 'block',
         textAlign: 'center',
-        margin: '20px auto 10px auto'
+        margin: '20px auto 10px auto',
+        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
     });
+    
+    btn.addEventListener('mouseenter', () => {
+        btn.style.transform = 'translateY(-2px)';
+        btn.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+    });
+    
+    btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'translateY(0)';
+        btn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+    });
+    
     return btn;
 }
 
@@ -145,20 +209,28 @@ export function createBottomButton(icon, ariaLabel) {
     Object.assign(btn.style, {
         fontSize: '1.5rem',
         background: '#fff',
-        border: '1px solid #ccc',
+        border: '1px solid #d3d6da',
         borderRadius: '50%',
-        width: '40px',
-        height: '40px',
+        width: '45px',
+        height: '45px',
         margin: '8px',
         cursor: 'pointer',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'background 0.2s'
+        transition: 'all 0.2s ease'
     });
-    btn.onmouseenter = () => btn.style.background = '#f0f0f0';
-    btn.onmouseleave = () => btn.style.background = '#fff';
+    btn.onmouseenter = () => {
+        btn.style.background = '#f5f5f5';
+        btn.style.transform = 'translateY(-2px)';
+        btn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+    };
+    btn.onmouseleave = () => {
+        btn.style.background = '#fff';
+        btn.style.transform = 'translateY(0)';
+        btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+    };
     return btn;
 }
 
@@ -234,6 +306,9 @@ export function addGameButtons(container, func) {
 
 
 export function removeGameContent(gridContainer, keyboardContainer) {
+    const gameCard = document.getElementById('game-card');
+    const searchRoot = gameCard || document.body;
+    
     // Remove grid
     if (gridContainer.parentNode) gridContainer.parentNode.removeChild(gridContainer);
     // Remove keyboard
@@ -245,10 +320,10 @@ export function removeGameContent(gridContainer, keyboardContainer) {
     document.getElementById('game-btn-row')?.remove();
     document.getElementById('hint-btn-row')?.remove();
     // Remove restart button if present
-    const restartBtn = Array.from(document.body.querySelectorAll('button')).find(btn => btn.textContent === 'Restart Game');
+    const restartBtn = Array.from(searchRoot.querySelectorAll('button')).find(btn => btn.textContent === 'Restart Game');
     if (restartBtn) restartBtn.remove();
     // Remove word source info
-    Array.from(document.body.querySelectorAll('p')).forEach(p => {
+    Array.from(searchRoot.querySelectorAll('p')).forEach(p => {
         if (p.textContent && p.textContent.startsWith('Words:')) p.remove();
     });
 }
@@ -305,12 +380,17 @@ export function addWordSourceBelowTitle(wordSource) {
     const wordSourceStyle = {
         fontSize: '0.8rem',
         color: '#666',
-        marginTop: '-20px',
-        marginBottom: '-5px',
+        marginTop: '5px',
+        marginBottom: '10px',
         textAlign: 'center',
     };
     Object.assign(wordSourceText.style, wordSourceStyle);
-    document.body.appendChild(wordSourceText);
+    const gameCard = document.getElementById('game-card');
+    if (gameCard) {
+        gameCard.appendChild(wordSourceText);
+    } else {
+        document.body.appendChild(wordSourceText);
+    }
 }
 
 
@@ -318,9 +398,35 @@ export function addWordSourceBelowTitle(wordSource) {
 export function applyBodyStyles() {
     Object.assign(document.body.style, {
         fontFamily: 'Arial, sans-serif',
-        backgroundColor: '#f0f0f0',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
         color: '#333',
         textAlign: 'center',
-        padding: '20px'
+        padding: '20px',
+        margin: '0'
     });
+}
+
+export function createGameCard() {
+    const card = document.createElement('div');
+    card.id = 'game-card';
+    Object.assign(card.style, {
+        background: '#ffffff',
+        borderRadius: '20px',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        maxWidth: '600px',
+        margin: '0 auto',
+        padding: '30px 20px',
+        minHeight: '400px'
+    });
+    return card;
+}
+
+export function ensureGameCard() {
+    let card = document.getElementById('game-card');
+    if (!card) {
+        card = createGameCard();
+        document.body.appendChild(card);
+    }
+    return card;
 }
