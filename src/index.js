@@ -91,7 +91,7 @@ function initializeApp() {
                 gameState,
                 updateGameState
             );
-            restoreGameState(savedState, gridContainer, WORD_LENGTH);
+            restoreGameState(savedState, gridContainer, keyboardContainer, WORD_LENGTH);
             return;
         }
     }

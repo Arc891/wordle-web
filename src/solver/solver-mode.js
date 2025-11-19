@@ -127,6 +127,10 @@ export function createSolverHintContainers() {
     }, {
         id: 'solver-words'
     });
+    wordsContainer.innerHTML = `
+        <h3 style="margin: 0 0 10px 0;">Possible Words</h3>
+        <div id="words-content">Enter some letters to see suggestions...</div>
+    `;
 
     // Letter frequency container
     const lettersContainer = createStyledElement('div', {
@@ -142,6 +146,10 @@ export function createSolverHintContainers() {
     }, {
         id: 'solver-letters'
     });
+    lettersContainer.innerHTML = `
+        <h3 style="margin: 0 0 10px 0;">Best Letters</h3>
+        <div id="letters-content">Enter some letters to see frequency...</div>
+    `;
 
     hintsContainer.appendChild(wordsContainer);
     hintsContainer.appendChild(lettersContainer);

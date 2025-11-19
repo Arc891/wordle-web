@@ -69,6 +69,10 @@ export async function checkGuess(guess, word, currentRow, gridContainer, keyboar
     await timeout;
 
     // Set keyboard keys based on the guess
+    if (!keyboardContainer) {
+        console.warn('Keyboard container not found');
+        return;
+    }
     const keyboardKeys = Array.from(keyboardContainer.querySelectorAll('button'));
     guess.forEach((letter, index) => {
         const keyButton = keyboardKeys.find(button => button.textContent.toUpperCase() === letter.toUpperCase());

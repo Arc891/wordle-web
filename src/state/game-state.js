@@ -54,7 +54,7 @@ export function loadGameState(WORD_LENGTH) {
     };
 }
 
-export function restoreGameState(gameState, gridContainer, WORD_LENGTH) {
+export function restoreGameState(gameState, gridContainer, keyboardContainer, WORD_LENGTH) {
     // Restore guesses to the grid (set letters first)
     gameState.guesses.forEach((guess, row) => {
         for (let col = 0; col < guess.length; col++) {
@@ -65,7 +65,7 @@ export function restoreGameState(gameState, gridContainer, WORD_LENGTH) {
     // Now animate and color only for completed guesses
     gameState.guesses.forEach((guess, row) => {
         if (guess.length === WORD_LENGTH) {
-            checkGuess(guess.split(''), gameState.word, row, gridContainer, null, WORD_LENGTH);
+            checkGuess(guess.split(''), gameState.word, row, gridContainer, keyboardContainer, WORD_LENGTH);
         }
     });
 }

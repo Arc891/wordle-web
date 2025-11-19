@@ -142,7 +142,9 @@ export function addButtonHoverEffect(button, options = {}) {
     button.addEventListener('mouseenter', () => {
         if (skipColoredButtons) {
             const bg = button.style.backgroundColor;
-            if (bg.includes('rgb(120') || bg.includes('rgb(202') || bg.includes('rgb(107')) {
+            // Check for Wordle game colors (absent, present, correct)
+            if (bg && (bg.includes('rgb(120') || bg.includes('rgb(202') || bg.includes('rgb(107') || 
+                       bg.includes('#787c7e') || bg.includes('#cab458') || bg.includes('#6baa64'))) {
                 return; // Skip if button has game colors
             }
         }
@@ -154,7 +156,10 @@ export function addButtonHoverEffect(button, options = {}) {
     button.addEventListener('mouseleave', () => {
         if (skipColoredButtons) {
             const bg = button.style.backgroundColor;
-            if (bg.includes('rgb(120') || bg.includes('rgb(202') || bg.includes('rgb(107')) {
+            // Check for Wordle game colors (absent, present, correct) and white
+            if (bg && (bg.includes('rgb(120') || bg.includes('rgb(202') || bg.includes('rgb(107') || 
+                       bg.includes('#787c7e') || bg.includes('#cab458') || bg.includes('#6baa64') ||
+                       bg === 'rgb(255, 255, 255)' || bg === '#ffffff' || bg === 'white')) {
                 return;
             }
         }
@@ -167,16 +172,29 @@ export function addButtonHoverEffect(button, options = {}) {
 // Add press effect to button
 export function addButtonPressEffect(button, duration = 100) {
     return function triggerPress() {
+        const originalBg = button.style.backgroundColor;
+        const isGameColor = originalBg && (originalBg.includes('rgb(120') || originalBg.includes('rgb(202') || 
+                            originalBg.includes('rgb(107') || originalBg.includes('#787c7e') || 
+                            originalBg.includes('#cab458') || originalBg.includes('#6baa64'));
+        
         button.style.transform = 'scale(0.95)';
         button.style.boxShadow = theme.shadows.buttonActive;
-        button.style.backgroundColor = theme.colors.buttonActive;
+        
+        // Only change background color if it's not a game color
+        if (!isGameColor) {
+            button.style.backgroundColor = theme.colors.buttonActive;
+        }
         
         setTimeout(() => {
             button.style.transform = 'scale(1)';
             button.style.boxShadow = theme.shadows.button;
-            const currentBg = button.style.backgroundColor;
-            if (currentBg === 'rgb(232, 232, 232)' || currentBg === theme.colors.buttonActive) {
-                button.style.backgroundColor = theme.colors.buttonDefault;
+            
+            // Only reset background if we changed it (not a game color)
+            if (!isGameColor) {
+                const currentBg = button.style.backgroundColor;
+                if (currentBg === 'rgb(232, 232, 232)' || currentBg === theme.colors.buttonActive) {
+                    button.style.backgroundColor = theme.colors.buttonDefault;
+                }
             }
         }, duration);
     };
