@@ -4,6 +4,7 @@ import { loadGameState, restoreGameState } from './state/game-state.js';
 import { startGame, showWordSetSelection } from './game/game-controller.js';
 import { startSolverMode, showSolverModeInfo } from './solver/solver-mode.js';
 import { unlockSolverMode } from './components/ui-handlers.js';
+import { theme } from './styles/theme.js';
 
 // Global constants
 const WORD_LENGTH = 5;
@@ -61,12 +62,14 @@ function initializeApp() {
     // Add title inside the card
     const title = document.createElement('h1');
     title.textContent = 'Wordle Game';
-    title.style.textAlign = 'center';
-    title.style.marginTop = '0px';
-    title.style.color = '#667eea';
-    title.style.fontSize = '2.5rem';
-    title.style.marginBottom = '10px';
-    title.style.cursor = 'pointer';
+    Object.assign(title.style, {
+        textAlign: 'center',
+        marginTop: '0px',
+        color: theme.colors.primary,
+        fontSize: theme.typography.fontSize.title,
+        marginBottom: '10px',
+        cursor: 'pointer'
+    });
     title.addEventListener('click', handleTitleClick);
     gameCard.appendChild(title);
     

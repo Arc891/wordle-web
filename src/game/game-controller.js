@@ -9,6 +9,8 @@ import {
     removeGameContent 
 } from '../components/setup.js';
 import { clearGrid, encodeWord, mapWordSourceToWords } from '../utils.js';
+import { theme } from '../styles/theme.js';
+import { createStyledElement } from '../styles/utils.js';
 
 export function createPlayerInputHandler(
     gameStateRef,
@@ -295,14 +297,17 @@ export function playerInput(
 }
 
 export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENGTH, ROWS, updateGameState) {
-    const container = document.createElement('div');
-    container.style.textAlign = 'center';
-    container.style.marginTop = '40px';
+    const container = createStyledElement('div', {
+        textAlign: 'center',
+        marginTop: theme.spacing.xxl
+    });
 
-    const info = document.createElement('div');
-    info.textContent = 'Choose your word set:';
-    info.style.fontSize = '1.2rem';
-    info.style.marginBottom = '20px';
+    const info = createStyledElement('div', {
+        fontSize: theme.typography.fontSize.lg,
+        marginBottom: theme.spacing.lg
+    }, {
+        textContent: 'Choose your word set:'
+    });
     container.appendChild(info);
 
     const btnCommon = createSelectionButton('Common Words');

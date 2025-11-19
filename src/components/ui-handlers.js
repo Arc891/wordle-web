@@ -1,35 +1,24 @@
 import { clearGrid } from '../utils.js';
 import { removeGameContent } from './setup.js';
+import { theme } from '../styles/theme.js';
+import { createStyledElement, stylePatterns, addButtonHoverEffect } from '../styles/utils.js';
 
 export function addRestartButton(keyboardContainer, restartCallback) {
-    const restartButton = document.createElement('button');
-    restartButton.textContent = 'Restart Game';
-    const resetButtonStyle = {
-        padding: '12px 24px',
-        fontSize: '1rem',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: '600',
-        color: '#fff',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
+    const restartButton = createStyledElement('button', {
+        ...stylePatterns.primaryButton,
         display: 'block',
         textAlign: 'center',
-        margin: '20px auto 0 auto',
-        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-    }
-    Object.assign(restartButton.style, resetButtonStyle);
-    
-    restartButton.addEventListener('mouseenter', () => {
-        restartButton.style.transform = 'translateY(-2px)';
-        restartButton.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+        margin: `${theme.spacing.lg} auto 0 auto`
+    }, {
+        textContent: 'Restart Game'
     });
     
-    restartButton.addEventListener('mouseleave', () => {
-        restartButton.style.transform = 'translateY(0)';
-        restartButton.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+    addButtonHoverEffect(restartButton, {
+        hoverTransform: 'translateY(-2px)',
+        normalTransform: 'translateY(0)',
+        hoverShadow: theme.shadows.primaryButtonHover,
+        normalShadow: theme.shadows.primaryButton,
+        skipColoredButtons: false
     });
 
     // Insert the button just before the keyboard to keep it centered with the keyboard
