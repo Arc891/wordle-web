@@ -324,7 +324,7 @@ export function createSolverKeyboard(solverGrid, wordSource, WORD_LENGTH, ROWS) 
             // Add touch feedback for mobile
             keyButton.addEventListener('touchstart', () => {
                 triggerPress();
-            });
+            }, { passive: true });
 
             keyButton.addEventListener('click', () => { 
                 triggerPress();
@@ -371,7 +371,10 @@ export function setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMo
     // Add click handlers to tiles for color cycling
     Array.from(solverGrid.children).forEach((square, _) => {
         // Enhanced touch handling for mobile
-        square.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+        const eventOptions = isMobile ? { passive: false } : undefined; // Non-passive because we preventDefault
+        const eventType = isMobile ? 'touchstart' : 'click';
+        
+        const handler = (e) => {
             if (isMobile) {
                 e.preventDefault(); // Prevent double-tap zoom
             }
@@ -401,7 +404,13 @@ export function setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMo
             }, 100);
             
             updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH);
-        });
+        };
+        
+        if (eventOptions) {
+            square.addEventListener(eventType, handler, eventOptions);
+        } else {
+            square.addEventListener(eventType, handler);
+        }
     });
 
     // Keyboard input handler (works for both physical and virtual keyboards)
