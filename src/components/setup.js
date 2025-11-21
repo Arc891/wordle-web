@@ -316,7 +316,9 @@ export function applyBodyStyles() {
         color: theme.colors.textPrimary,
         textAlign: 'center',
         padding: theme.spacing.lg,
-        margin: '0'
+        margin: '0',
+        overflow: 'auto',
+        boxSizing: 'border-box'
     });
 }
 
