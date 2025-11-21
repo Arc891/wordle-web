@@ -34,6 +34,10 @@ export function addRestartButton(keyboardContainer, restartCallback) {
 
     function restartFromBtn() {
         console.log('Game restarted');
+        // Close any open hint dropdowns
+        document.getElementById('dropdown-words')?.remove();
+        document.getElementById('dropdown-letters')?.remove();
+        
         document.removeEventListener('keydown', restartOnInputs); // Remove the restart event listener
         if (restartButton.parentNode) {
             restartButton.parentNode.removeChild(restartButton);
@@ -53,6 +57,10 @@ export function addRestartButton(keyboardContainer, restartCallback) {
 }
 
 export function giveUp(word, gameDone, playGameHandler, gridContainer, keyboardContainer, playerInputCallback) {
+    // Close any open hint dropdowns
+    document.getElementById('dropdown-words')?.remove();
+    document.getElementById('dropdown-letters')?.remove();
+    
     if (!gameDone) alert(`Game Over! The word was: ${word}`);
     document.removeEventListener('keydown', playGameHandler);
     clearGrid(gridContainer, keyboardContainer);
@@ -61,6 +69,10 @@ export function giveUp(word, gameDone, playGameHandler, gridContainer, keyboardC
 }
 
 export function resetGame(gridContainer, keyboardContainer, showWordSetSelectionCallback) {
+    // Close any open hint dropdowns
+    document.getElementById('dropdown-words')?.remove();
+    document.getElementById('dropdown-letters')?.remove();
+    
     localStorage.removeItem('wordleGameState');
     window.history.replaceState({}, '', `${window.location.pathname}`);
     removeGameContent(gridContainer, keyboardContainer);

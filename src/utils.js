@@ -31,8 +31,24 @@ export function rgbToHex(rgb) {
     return `#${hex}`;
 }
 
+export function closeHintDropdowns() {
+    // Close any open hint/solution dropdowns
+    const wordsDropdown = document.getElementById('dropdown-words');
+    const lettersDropdown = document.getElementById('dropdown-letters');
+    
+    if (wordsDropdown) {
+        wordsDropdown.remove();
+    }
+    if (lettersDropdown) {
+        lettersDropdown.remove();
+    }
+}
+
 export function clearGrid(gridContainer, keyboardContainer) {
     console.debug("Clearing the grid...");
+    // Close any open dropdowns when clearing grid
+    closeHintDropdowns();
+    
     for (let i = 0; i < gridContainer.children.length; i++) {
         gridContainer.children[i].textContent = '';
         gridContainer.children[i].style.backgroundColor = '#fff'; // Reset background color

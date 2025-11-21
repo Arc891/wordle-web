@@ -8,7 +8,7 @@ import {
     createSelectionButton, 
     removeGameContent 
 } from '../components/setup.js';
-import { clearGrid, encodeWord, mapWordSourceToWords } from '../utils.js';
+import { clearGrid, encodeWord, mapWordSourceToWords, closeHintDropdowns } from '../utils.js';
 import { theme } from '../styles/theme.js';
 import { createStyledElement } from '../styles/utils.js';
 
@@ -44,6 +44,7 @@ export function createPlayerInputHandler(
             addLetterToSquare('', currentRow, newCol, gridContainer, WORD_LENGTH);
             updateGameState({ currentCol: newCol });
         } else if (event.key === 'Enter' && !gameDone) {
+            event.preventDefault();
             updateGameState({ playGameHandlerActive: false });
             document.removeEventListener('keydown', playGameHandler);
             
@@ -58,6 +59,9 @@ export function createPlayerInputHandler(
                 return;
             }
 
+            // Close any open hint/solution dropdowns when submitting a word
+            closeHintDropdowns();
+            
             checkGuess(guess, word, currentRow, gridContainer, keyboardContainer, WORD_LENGTH).then(() => {
                 const { wordSource } = gameStateRef();
                 

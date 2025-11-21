@@ -180,8 +180,14 @@ export function addHintButtons(container, getHints) {
     const lightbulbBtn = createBottomButton('💡', 'Show most common letters');
     const questionBtn = createBottomButton('❓', 'Show possible words');
 
-    lightbulbBtn.onclick = () => getHints('letters');
-    questionBtn.onclick = () => getHints('words');
+    lightbulbBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        getHints('letters');
+    };
+    questionBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        getHints('words');
+    };
 
     btnRow.appendChild(buttonWithLabel(lightbulbBtn, 'Hint'));
     btnRow.appendChild(buttonWithLabel(questionBtn, 'Answers'));
@@ -196,8 +202,14 @@ export function addGameButtons(container, func) {
     const giveUpBtn = createBottomButton('🛑', 'Give up this guess');
     const resetBtn = createBottomButton('🔄', 'Restart game session');
 
-    giveUpBtn.onclick = () => func('give up');
-    resetBtn.onclick = () => func('reset');
+    giveUpBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        func('give up');
+    };
+    resetBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        func('reset');
+    };
 
     btnRow.appendChild(buttonWithLabel(giveUpBtn, 'Give up'));
     btnRow.appendChild(buttonWithLabel(resetBtn, 'Reset'));
