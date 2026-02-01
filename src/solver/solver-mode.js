@@ -186,7 +186,24 @@ export function createSolverHintPanels(isMobile) {
         </h3>
     `;
     wordsPanel.appendChild(wordsHeader);
-    
+
+    const wordsCount = createStyledElement('div', {
+        display: 'none',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: theme.spacing.sm,
+        padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+        background: theme.colors.accentLight,
+        borderRadius: theme.borderRadius.md,
+        color: theme.colors.primary,
+        fontWeight: theme.typography.fontWeight.semibold,
+        fontSize: theme.typography.fontSize.xs,
+        flexShrink: '0'
+    }, {
+        id: 'words-count'
+    });
+    wordsPanel.appendChild(wordsCount);
+
     const wordsContent = createStyledElement('div', {
         flex: '1',
         overflowY: 'auto',
@@ -258,6 +275,7 @@ export function updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH) {
 
     if (filledRows === 0) {
         // No content, show initial state
+        document.getElementById('words-count').style.display = 'none';
         document.getElementById('words-content').innerHTML = `
             <div style="
                 display: flex;
@@ -291,34 +309,23 @@ export function updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH) {
     const possibleWords = solveWordle(solverGrid, filledRows, wordSource);
     
     // Update words display
+    const wordsCount = document.getElementById('words-count');
     const wordsContent = document.getElementById('words-content');
     if (possibleWords.length > 0) {
-        const displayLimit = 100;
-        const wordList = possibleWords.slice(0, displayLimit).join(', ');
-        const remaining = possibleWords.length - displayLimit;
-        
+        wordsCount.style.display = 'flex';
+        wordsCount.innerHTML = `
+            <span style="font-size: 20px;">✓</span>
+            <span>${possibleWords.length} possible word${possibleWords.length === 1 ? '' : 's'}</span>
+        `;
         wordsContent.innerHTML = `
-            <div style="
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: ${theme.spacing.md};
-                padding: ${theme.spacing.sm} ${theme.spacing.md};
-                background: ${theme.colors.accentLight};
-                border-radius: ${theme.borderRadius.md};
-                color: ${theme.colors.primary};
-                font-weight: ${theme.typography.fontWeight.semibold};
-            ">
-                <span style="font-size: 20px;">✓</span>
-                <span>${possibleWords.length} possible word${possibleWords.length === 1 ? '' : 's'}</span>
-            </div>
             <div style="
                 padding: ${theme.spacing.sm};
                 line-height: 1.8;
                 word-wrap: break-word;
-            ">${wordList}${remaining > 0 ? `<span style="color: ${theme.colors.textSecondary}; font-style: italic;"> ... and ${remaining} more</span>` : ''}</div>
+            ">${possibleWords.join(', ')}</div>
         `;
     } else {
+        wordsCount.style.display = 'none';
         wordsContent.innerHTML = `
             <div style="
                 display: flex;
