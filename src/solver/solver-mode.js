@@ -1,6 +1,8 @@
 import { createGridContainer, addWordSourceBelowTitle, removeGameContent } from '../components/setup.js';
 import { mapWordSourceToWords, LetterStatus, rgbToHex } from '../utils.js';
 import { solveWordle, countMostCommonLetters } from './solve-wordle.js';
+import { theme, getTheme } from '../styles/theme.js';
+import { createStyledElement, stylePatterns, addButtonPressEffect, addButtonHoverEffect } from '../styles/utils.js';
 
 export function showSolverModeInfo(startSolverModeCallback) {
     const overlay = document.createElement('div');
@@ -17,18 +19,17 @@ export function showSolverModeInfo(startSolverModeCallback) {
         z-index: 1000;
     `;
 
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        max-width: 500px;
-        text-align: center;
-        font-family: Arial, sans-serif;
-    `;
+    const modal = createStyledElement('div', {
+        background: theme.colors.cardBackground,
+        padding: theme.spacing.xl,
+        borderRadius: theme.borderRadius.lg,
+        maxWidth: '500px',
+        textAlign: 'center',
+        fontFamily: theme.typography.fontFamily
+    });
 
     modal.innerHTML = `
-        <h2>🎉 Wordle Solver Mode Unlocked!</h2>
+        <h2 style="color: ${theme.colors.primary}; margin-top: 0;">🎉 Wordle Solver Mode Unlocked!</h2>
         <p><strong>How it works:</strong></p>
         <ul style="text-align: left; margin: 20px 0;">
             <li>Type letters directly - they auto-advance to next row</li>
@@ -41,13 +42,16 @@ export function showSolverModeInfo(startSolverModeCallback) {
             <li>Use backspace to delete letters</li>
         </ul>
         <button id="start-solver" style="
-            background: #007bff;
-            color: white;
+            background: linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.primaryDark} 100%);
+            color: ${theme.colors.textLight};
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: ${theme.borderRadius.md};
             cursor: pointer;
             font-size: 16px;
+            font-weight: ${theme.typography.fontWeight.medium};
+            box-shadow: ${theme.shadows.primaryButton};
+            transition: transform ${theme.transitions.normal}, box-shadow ${theme.transitions.normal};
         ">Start Solver Mode</button>
     `;
 
@@ -70,82 +74,185 @@ export function startSolverMode(gridContainer, keyboardContainer, wordSource, WO
     }
     const [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
     
-    // Create solver grid with mobile-friendly styling
-    const solverGrid = createSolverGrid(WORD_LENGTH, ROWS);
-    addWordSourceBelowTitle(wordSource);
-    document.body.appendChild(solverGrid);
-    
-    // Add mobile-friendly instructions
-    // addSolverInstructions();
-    
-    // Create mobile-friendly keyboard if needed (always show for consistency)
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    createSolverKeyboard(solverGrid, wordSource, WORD_LENGTH, ROWS);
+    const gameCard = document.getElementById('game-card');
     
-    // Create always-visible hint containers
-    createSolverHintContainers();
+    // Make game card wider for solver mode
+    if (gameCard && !isMobile) {
+        gameCard.style.maxWidth = '1400px';
+        gameCard.style.width = '95%';
+    }
+    
+    addWordSourceBelowTitle(wordSource);
+    
+    // Create main solver layout container
+    const solverLayout = createSolverLayout(WORD_LENGTH, ROWS, isMobile);
+    
+    if (gameCard) {
+        gameCard.appendChild(solverLayout.container);
+    } else {
+        document.body.appendChild(solverLayout.container);
+    }
     
     // Setup solver input handling
-    setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMobile);
+    setupSolverInput(solverLayout.grid, wordSource, WORD_LENGTH, ROWS, isMobile);
     
     // Initial hint update
-    updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH);
+    updateSolverHints(solverLayout.grid, wordSource, ROWS, WORD_LENGTH);
     
-    return { solverGrid, wordsToGuess, wordsToUse, wordSource };
+    return { solverGrid: solverLayout.grid, wordsToGuess, wordsToUse, wordSource };
 }
 
-export function createSolverHintContainers() {
-    const hintsContainer = document.createElement('div');
-    hintsContainer.style.cssText = `
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-        margin: 20px auto;
-        max-width: 800px;
-        flex-wrap: wrap;
-    `;
+export function createSolverLayout(WORD_LENGTH, ROWS, isMobile) {
+    // Main layout container
+    const layoutContainer = createStyledElement('div', {
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: theme.spacing.xl,
+        margin: `${theme.spacing.lg} auto`,
+        alignItems: isMobile ? 'center' : 'flex-start',
+        justifyContent: 'center',
+        padding: isMobile ? theme.spacing.md : theme.spacing.lg
+    });
 
-    // Possible words container
-    const wordsContainer = document.createElement('div');
-    wordsContainer.id = 'solver-words';
-    wordsContainer.style.cssText = `
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 15px;
-        min-width: 300px;
-        max-height: 300px;
-        overflow-y: auto;
-        flex: 1;
-        min-width: 280px;
-    `;
-    wordsContainer.innerHTML = `
-        <h3 style="margin: 0 0 10px 0;">Possible Words</h3>
-        <div id="words-content">Enter some letters to see suggestions...</div>
-    `;
+    // Create grid and keyboard in center column
+    const centerColumn = createStyledElement('div', {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+        flex: isMobile ? 'none' : '0 0 auto'
+    });
 
-    // Letter frequency container
-    const lettersContainer = document.createElement('div');
-    lettersContainer.id = 'solver-letters';
-    lettersContainer.style.cssText = `
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 15px;
-        min-width: 200px;
-        max-height: 300px;
-        overflow-y: auto;
-        flex: 1;
-        min-width: 280px;
-    `;
-    lettersContainer.innerHTML = `
-        <h3 style="margin: 0 0 10px 0;">Best Letters</h3>
-        <div id="letters-content">Enter some letters to see frequency...</div>
-    `;
+    const solverGrid = createSolverGrid(WORD_LENGTH, ROWS);
+    centerColumn.appendChild(solverGrid);
+    
+    const keyboard = createSolverKeyboardElement(solverGrid, WORD_LENGTH, ROWS);
+    centerColumn.appendChild(keyboard);
 
-    hintsContainer.appendChild(wordsContainer);
-    hintsContainer.appendChild(lettersContainer);
-    document.body.appendChild(hintsContainer);
+    // Create hint panels
+    const { wordsPanel, lettersPanel } = createSolverHintPanels(isMobile);
+
+    if (isMobile) {
+        // Mobile: Stack everything vertically
+        layoutContainer.appendChild(centerColumn);
+        layoutContainer.appendChild(wordsPanel);
+        layoutContainer.appendChild(lettersPanel);
+    } else {
+        // Desktop: Side panels + center + future panel space
+        layoutContainer.appendChild(wordsPanel);
+        layoutContainer.appendChild(centerColumn);
+        layoutContainer.appendChild(lettersPanel);
+    }
+
+    return { container: layoutContainer, grid: solverGrid };
+}
+
+export function createSolverHintPanels(isMobile) {
+    const panelStyle = {
+        background: theme.colors.cardBackground,
+        border: `2px solid ${theme.colors.borderLight}`,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.lg,
+        boxShadow: theme.shadows.lg,
+        display: 'flex',
+        flexDirection: 'column',
+        width: isMobile ? '100%' : '280px',
+        maxWidth: isMobile ? '500px' : '280px',
+        height: isMobile ? 'auto' : 'fit-content',
+        maxHeight: isMobile ? '400px' : '600px'
+    };
+
+    // Possible words panel
+    const wordsPanel = createStyledElement('div', panelStyle, { id: 'solver-words' });
+    
+    const wordsHeader = createStyledElement('div', {
+        marginBottom: theme.spacing.md,
+        paddingBottom: theme.spacing.sm,
+        borderBottom: `2px solid ${theme.colors.borderLight}`
+    });
+    wordsHeader.innerHTML = `
+        <h3 style="
+            margin: 0;
+            color: ${theme.colors.primary};
+            font-size: ${theme.typography.fontSize.md};
+            font-weight: ${theme.typography.fontWeight.semibold};
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        ">
+            <span style="font-size: 20px;">💡</span>
+            Possible Words
+        </h3>
+    `;
+    wordsPanel.appendChild(wordsHeader);
+
+    const wordsCount = createStyledElement('div', {
+        display: 'none',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: theme.spacing.sm,
+        padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+        background: theme.colors.accentLight,
+        borderRadius: theme.borderRadius.md,
+        color: theme.colors.primary,
+        fontWeight: theme.typography.fontWeight.semibold,
+        fontSize: theme.typography.fontSize.xs,
+        flexShrink: '0'
+    }, {
+        id: 'words-count'
+    });
+    wordsPanel.appendChild(wordsCount);
+
+    const wordsContent = createStyledElement('div', {
+        flex: '1',
+        overflowY: 'auto',
+        fontSize: theme.typography.fontSize.xs,
+        lineHeight: '1.5',
+        color: theme.colors.text
+    }, {
+        id: 'words-content'
+    });
+    wordsContent.textContent = 'Enter some letters to see suggestions...';
+    wordsPanel.appendChild(wordsContent);
+
+    // Letter frequency panel
+    const lettersPanel = createStyledElement('div', panelStyle, { id: 'solver-letters' });
+    
+    const lettersHeader = createStyledElement('div', {
+        marginBottom: theme.spacing.md,
+        paddingBottom: theme.spacing.sm,
+        borderBottom: `2px solid ${theme.colors.borderLight}`
+    });
+    lettersHeader.innerHTML = `
+        <h3 style="
+            margin: 0;
+            color: ${theme.colors.primary};
+            font-size: ${theme.typography.fontSize.md};
+            font-weight: ${theme.typography.fontWeight.semibold};
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        ">
+            <span style="font-size: 20px;">🔤</span>
+            Best Letters
+        </h3>
+    `;
+    lettersPanel.appendChild(lettersHeader);
+    
+    const lettersContent = createStyledElement('div', {
+        flex: '1',
+        overflowY: 'auto',
+        fontSize: theme.typography.fontSize.xs,
+        lineHeight: '1.4',
+        color: theme.colors.text
+    }, {
+        id: 'letters-content'
+    });
+    lettersContent.textContent = 'Enter some letters to see frequency...';
+    lettersPanel.appendChild(lettersContent);
+
+    return { wordsPanel, lettersPanel };
 }
 
 
@@ -168,8 +275,33 @@ export function updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH) {
 
     if (filledRows === 0) {
         // No content, show initial state
-        document.getElementById('words-content').textContent = 'Enter some letters to see suggestions...';
-        document.getElementById('letters-content').textContent = 'Enter some letters to see frequency...';
+        document.getElementById('words-count').style.display = 'none';
+        document.getElementById('words-content').innerHTML = `
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: ${theme.colors.textSecondary};
+                text-align: center;
+                padding: ${theme.spacing.lg};
+            ">
+                <p style="margin: 0;">✨ Enter some letters to see suggestions...</p>
+            </div>
+        `;
+        document.getElementById('letters-content').innerHTML = `
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: ${theme.colors.textSecondary};
+                text-align: center;
+                padding: ${theme.spacing.lg};
+            ">
+                <p style="margin: 0;">📊 Letter frequency will appear here...</p>
+            </div>
+        `;
         return;
     }
 
@@ -177,14 +309,40 @@ export function updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH) {
     const possibleWords = solveWordle(solverGrid, filledRows, wordSource);
     
     // Update words display
+    const wordsCount = document.getElementById('words-count');
     const wordsContent = document.getElementById('words-content');
     if (possibleWords.length > 0) {
+        wordsCount.style.display = 'flex';
+        wordsCount.innerHTML = `
+            <span style="font-size: 20px;">✓</span>
+            <span>${possibleWords.length} possible word${possibleWords.length === 1 ? '' : 's'}</span>
+        `;
         wordsContent.innerHTML = `
-            <div style="margin-bottom: 10px;"><strong>${possibleWords.length} possible words:</strong></div>
-            <div style="font-size: 14px; line-height: 1.4;">${possibleWords.slice(0, 50).join(', ')}${possibleWords.length > 50 ? '...' : ''}</div>
+            <div style="
+                padding: ${theme.spacing.sm};
+                line-height: 1.8;
+                word-wrap: break-word;
+            ">${possibleWords.join(', ')}</div>
         `;
     } else {
-        wordsContent.innerHTML = '<div style="color: #dc3545;">No possible words found. Check your clues!</div>';
+        wordsCount.style.display = 'none';
+        wordsContent.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: ${theme.colors.error};
+                text-align: center;
+                padding: ${theme.spacing.lg};
+                gap: ${theme.spacing.sm};
+            ">
+                <span style="font-size: 48px;">❌</span>
+                <p style="margin: 0; font-weight: ${theme.typography.fontWeight.semibold};">No possible words found</p>
+                <p style="margin: 0; font-size: ${theme.typography.fontSize.sm}; color: ${theme.colors.textSecondary};">Double-check your clue colors!</p>
+            </div>
+        `;
     }
     
     // Update letters display
@@ -193,78 +351,193 @@ export function updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH) {
         const letterCounts = countMostCommonLetters(possibleWords);
         const sortedLetters = Object.entries(letterCounts)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
+            .slice(0, 15);
         
         lettersContent.innerHTML = `
-            <div style="margin-bottom: 10px;"><strong>Most frequent letters:</strong></div>
-            <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                ${sortedLetters.map(([letter, count]) => `<li><strong>${letter}</strong>: ${count}</li>`).join('')}
-            </ol>
+            <div style="
+                display: flex;
+                flex-direction: column;
+                gap: ${theme.spacing.xs};
+            ">
+                ${sortedLetters.map(([letter, count], index) => {
+                    const percentage = ((count / possibleWords.length) * 100).toFixed(1);
+                    const barWidth = percentage;
+                    return `
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: ${theme.spacing.sm};
+                            padding: ${theme.spacing.xs} 0;
+                        ">
+                            <span style="
+                                font-weight: ${theme.typography.fontWeight.bold};
+                                font-size: ${theme.typography.fontSize.lg};
+                                text-transform: uppercase;
+                                width: 24px;
+                                text-align: center;
+                                color: ${theme.colors.primary};
+                            ">${letter}</span>
+                            <div style="
+                                flex: 1;
+                                background: ${theme.colors.borderLight};
+                                border-radius: ${theme.borderRadius.sm};
+                                height: 24px;
+                                position: relative;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    height: 100%;
+                                    width: ${barWidth}%;
+                                    background: linear-gradient(90deg, ${theme.colors.primary} 0%, ${theme.colors.primaryDark} 100%);
+                                    border-radius: ${theme.borderRadius.sm};
+                                    transition: width 0.3s ease;
+                                "></div>
+                                <span style="
+                                    position: absolute;
+                                    right: 8px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    font-size: ${theme.typography.fontSize.xs};
+                                    font-weight: ${theme.typography.fontWeight.semibold};
+                                    color: ${parseFloat(barWidth) > 50 ? theme.colors.textLight : theme.colors.text};
+                                    z-index: 1;
+                                ">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
         `;
     } else {
-        lettersContent.innerHTML = '<div style="color: #dc3545;">No letters to analyze.</div>';
+        lettersContent.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                color: ${theme.colors.textSecondary};
+                text-align: center;
+                padding: ${theme.spacing.lg};
+                gap: ${theme.spacing.sm};
+            ">
+                <span style="font-size: 48px;">📭</span>
+                <p style="margin: 0;">No letters to analyze</p>
+            </div>
+        `;
     }
 }
 
 export function createSolverGrid(WORD_LENGTH, ROWS) {
-    const gridContainer = document.createElement('div');
-    const squareSize = window.innerWidth <= 768 ? 60 : 50; // Larger on mobile
-    const gap = window.innerWidth <= 768 ? 10 : 8; // More space on mobile
+    const currentTheme = getTheme();
+    const squareSize = currentTheme.grid.squareSize;
+    const gap = currentTheme.grid.gap;
     const totalWidth = WORD_LENGTH * squareSize + (WORD_LENGTH - 1) * gap;
 
-    Object.assign(gridContainer.style, {
+    const gridContainer = createStyledElement('div', {
         display: 'grid',
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${WORD_LENGTH}, 1fr)`,
         gap: `${gap}px`,
         width: `${totalWidth}px`,
-        margin: '40px auto'
+        margin: '0'
     });
 
     for (let i = 0; i < WORD_LENGTH * ROWS; i++) {
-        const square = document.createElement('div');
-        const squareProperties = {
+        const square = createStyledElement('div', {
+            ...stylePatterns.gridSquare,
+            width: `${squareSize}px`,
+            height: `${squareSize}px`,
+            cursor: 'pointer',
+            touchAction: 'manipulation'
+        }, {
             className: 'solver-grid-square',
-            textContent: '',
-            style: {
-                width: `${squareSize}px`,
-                height: `${squareSize}px`,
-                border: '2px solid #ccc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: window.innerWidth <= 768 ? '1.8rem' : '1.5rem',
-                fontFamily: 'Arial, sans-serif',
-                fontWeight: 'bold',
-                color: '#333',
-                background: '#fff',
-                boxSizing: 'border-box',
-                cursor: 'pointer',
-                userSelect: 'none',
-                touchAction: 'manipulation' // Better touch handling
-            }
-        };
-        Object.assign(square, { className: squareProperties.className, textContent: squareProperties.textContent });
-        Object.assign(square.style, squareProperties.style);
+            textContent: ''
+        });
         gridContainer.appendChild(square);
     }
 
     return gridContainer;
 }
 
+export function createSolverKeyboardElement(solverGrid, WORD_LENGTH, ROWS) {
+    function simulateKeyPress(key) {
+        const event = new KeyboardEvent('keydown', { key });
+        document.dispatchEvent(event);
+    }
+    
+    const currentTheme = getTheme();
+    const keyboardContainer = createStyledElement('div', stylePatterns.keyboardContainer);
+    keyboardContainer.id = 'solver-keyboard';
+
+    // Define keys in rows to mimic the game keyboard layout
+    const keyRows = [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
+    ];
+
+    const rowStyle = {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: currentTheme.keyboard.gap
+    };
+
+    keyRows.forEach((row) => {
+        const rowDiv = createStyledElement('div', rowStyle);
+
+        row.forEach((key) => {
+            const keyButton = createStyledElement('button', stylePatterns.keyboardButton, {
+                textContent: key === 'Backspace' ? '⌫' : key,
+                dataset: { key }
+            });
+
+            // Make Enter and Backspace wider
+            if (key === 'Enter' || key === 'Backspace') {
+                keyButton.style.minWidth = currentTheme.keyboard.specialButtonMinWidth;
+                keyButton.style.fontSize = key === 'Enter' ? theme.typography.fontSize.xs : theme.typography.fontSize.lg;
+            }
+
+            // Add press effect
+            const triggerPress = addButtonPressEffect(keyButton);
+
+            // Add hover effect
+            addButtonHoverEffect(keyButton);
+
+            // Add touch feedback for mobile
+            keyButton.addEventListener('touchstart', () => {
+                triggerPress();
+            }, { passive: true });
+
+            keyButton.addEventListener('click', () => { 
+                triggerPress();
+                simulateKeyPress(key); 
+            });
+            rowDiv.appendChild(keyButton);
+        });
+
+        keyboardContainer.appendChild(rowDiv);
+    });
+
+    return keyboardContainer;
+}
+
 export function addSolverInstructions() {
-    const instructionsContainer = document.createElement('div');
-    instructionsContainer.style.cssText = `
-        background: #e3f2fd;
-        border: 1px solid #2196f3;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 20px auto;
-        max-width: 600px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        text-align: center;
-    `;
+    const instructionsContainer = createStyledElement('div', {
+        background: theme.colors.keyboardBackground,
+        border: `1px solid ${theme.colors.borderLight}`,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        margin: `${theme.spacing.lg} auto`,
+        maxWidth: '600px',
+        fontFamily: theme.typography.fontFamily,
+        fontSize: theme.typography.fontSize.sm,
+        textAlign: 'center',
+        boxShadow: theme.shadows.md
+    });
     
     const isMobile = window.innerWidth <= 768;
     instructionsContainer.innerHTML = `
@@ -278,118 +551,6 @@ export function addSolverInstructions() {
     document.body.appendChild(instructionsContainer);
 }
 
-export function createSolverKeyboard(solverGrid, wordSource, WORD_LENGTH, ROWS) {
-    function simulateKeyPress(key) {
-        const event = new KeyboardEvent('keydown', { key });
-        document.dispatchEvent(event);
-    }
-    
-    const keyboardContainer = document.createElement('div');
-    keyboardContainer.id = 'solver-keyboard';
-
-    // Define keys in rows to mimic the game keyboard layout
-    const keyRows = [
-        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-        ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
-    ];
-
-    const keyboardContainerStyle = {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        width: 'max-content',
-        margin: '20px auto'
-    };
-
-    const rowStyle = {
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '8px'
-    };
-
-    const buttonStyle = {
-        padding: '10px 14px',
-        width: '20px',
-        textAlign: 'center',
-        fontSize: '1rem',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
-        color: '#333',
-        backgroundColor: '#e0e0e0',
-        border: '1px solid #ccc',
-        cursor: 'pointer',
-        transition: 'background-color 0.3s ease',
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-    };
-
-    Object.assign(keyboardContainer.style, keyboardContainerStyle);
-
-    keyRows.forEach((row) => {
-        const rowDiv = document.createElement('div');
-        Object.assign(rowDiv.style, rowStyle);
-
-        row.forEach((key) => {
-            const keyButton = document.createElement('button');
-            keyButton.textContent = key === 'Backspace' ? '⌫' : key;
-            Object.assign(keyButton.style, buttonStyle);
-
-            // Make Enter and Backspace a bit wider
-            if (key === 'Enter' || key === 'Backspace') {
-                keyButton.style.flex = '1.5';
-                keyButton.style.minWidth = '60px';
-            }
-
-            // Add hover effect
-            keyButton.addEventListener('mouseenter', () => {
-                keyButton.style.backgroundColor = '#d0d0d0';
-            });
-            keyButton.addEventListener('mouseleave', () => {
-                keyButton.style.backgroundColor = '#e0e0e0';
-            });
-
-            // Add touch feedback for mobile
-            keyButton.addEventListener('touchstart', () => {
-                keyButton.style.backgroundColor = '#d0d0d0';
-            });
-            keyButton.addEventListener('touchend', () => {
-                keyButton.style.backgroundColor = '#e0e0e0';
-            });
-
-            keyButton.addEventListener('click', () => { simulateKeyPress(key); });
-            rowDiv.appendChild(keyButton);
-        });
-
-        keyboardContainer.appendChild(rowDiv);
-    });
-
-    // Add color legend below the keyboard
-    const colorLegend = document.createElement('div');
-    colorLegend.style.cssText = `
-        margin-top: 15px;
-        padding: 10px;
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        font-size: 12px;
-        text-align: center;
-        font-family: Arial, sans-serif;
-    `;
-    colorLegend.innerHTML = `
-        <strong>Tap grid squares to change colors:</strong><br>
-        <span style="background: #787c7e; color: white; padding: 2px 6px; border-radius: 3px; margin: 0 2px;">Gray</span> = Absent • 
-        <span style="background: #cab458; color: white; padding: 2px 6px; border-radius: 3px; margin: 0 2px;">Yellow</span> = Present • 
-        <span style="background: #6baa64; color: white; padding: 2px 6px; border-radius: 3px; margin: 0 2px;">Green</span> = Correct
-    `;
-    keyboardContainer.appendChild(colorLegend);
-
-    document.body.appendChild(keyboardContainer);
-    return keyboardContainer;
-}
-
 export function setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMobile = false) {
     let currentSolverRow = 0;
     let currentSolverCol = 0;
@@ -397,7 +558,10 @@ export function setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMo
     // Add click handlers to tiles for color cycling
     Array.from(solverGrid.children).forEach((square, _) => {
         // Enhanced touch handling for mobile
-        square.addEventListener(isMobile ? 'touchstart' : 'click', (e) => {
+        const eventOptions = isMobile ? { passive: false } : undefined; // Non-passive because we preventDefault
+        const eventType = isMobile ? 'touchstart' : 'click';
+        
+        const handler = (e) => {
             if (isMobile) {
                 e.preventDefault(); // Prevent double-tap zoom
             }
@@ -427,7 +591,13 @@ export function setupSolverInput(solverGrid, wordSource, WORD_LENGTH, ROWS, isMo
             }, 100);
             
             updateSolverHints(solverGrid, wordSource, ROWS, WORD_LENGTH);
-        });
+        };
+        
+        if (eventOptions) {
+            square.addEventListener(eventType, handler, eventOptions);
+        } else {
+            square.addEventListener(eventType, handler);
+        }
     });
 
     // Keyboard input handler (works for both physical and virtual keyboards)

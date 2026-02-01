@@ -1,9 +1,10 @@
-import { createGridContainer, applyBodyStyles, createKeyboardContainer } from './components/setup.js';
+import { createGridContainer, applyBodyStyles, createKeyboardContainer, ensureGameCard } from './components/setup.js';
 import { decodeWord, mapWordSourceToWords } from './utils.js';
 import { loadGameState, restoreGameState } from './state/game-state.js';
 import { startGame, showWordSetSelection } from './game/game-controller.js';
 import { startSolverMode, showSolverModeInfo } from './solver/solver-mode.js';
 import { unlockSolverMode } from './components/ui-handlers.js';
+import { theme } from './styles/theme.js';
 
 // Global constants
 const WORD_LENGTH = 5;
@@ -52,16 +53,25 @@ function handleTitleClick() {
 
 // Initialize the application
 function initializeApp() {
-    // Add title
+    // Apply body styles first
+    applyBodyStyles();
+    
+    // Create game card
+    const gameCard = ensureGameCard();
+    
+    // Add title inside the card
     const title = document.createElement('h1');
     title.textContent = 'Wordle Game';
-    title.style.textAlign = 'center';
-    title.style.marginTop = '0px';
+    Object.assign(title.style, {
+        textAlign: 'center',
+        marginTop: '0px',
+        color: theme.colors.primary,
+        fontSize: theme.typography.fontSize.title,
+        marginBottom: '10px',
+        cursor: 'pointer'
+    });
     title.addEventListener('click', handleTitleClick);
-    document.body.appendChild(title);
-    
-    // Apply body styles
-    applyBodyStyles();
+    gameCard.appendChild(title);
     
     // Check for saved game state
     if (localStorage.getItem('wordleGameState')) {
@@ -81,7 +91,7 @@ function initializeApp() {
                 gameState,
                 updateGameState
             );
-            restoreGameState(savedState, gridContainer, WORD_LENGTH);
+            restoreGameState(savedState, gridContainer, keyboardContainer, WORD_LENGTH);
             return;
         }
     }

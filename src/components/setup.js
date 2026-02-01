@@ -1,11 +1,13 @@
+import { theme, getTheme } from '../styles/theme.js';
+import { createStyledElement, stylePatterns, addButtonHoverEffect, addButtonPressEffect } from '../styles/utils.js';
+
 export function createGridContainer(WORD_LENGTH, ROWS) {
-    const gridContainer = document.createElement('div');
-    const squareSize = 50; // px
-    const gap = 8; // px
-    // Calculate total width: (n squares * size) + (n-1 gaps)
+    const currentTheme = getTheme();
+    const squareSize = currentTheme.grid.squareSize;
+    const gap = currentTheme.grid.gap;
     const totalWidth = WORD_LENGTH * squareSize + (WORD_LENGTH - 1) * gap;
 
-    Object.assign(gridContainer.style, {
+    const gridContainer = createStyledElement('div', {
         display: 'grid',
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${WORD_LENGTH}, 1fr)`,
@@ -15,27 +17,14 @@ export function createGridContainer(WORD_LENGTH, ROWS) {
     });
 
     for (let i = 0; i < WORD_LENGTH * ROWS; i++) {
-        const square = document.createElement('div');
-        const squareProperties = {
+        const square = createStyledElement('div', {
+            ...stylePatterns.gridSquare,
+            width: `${squareSize}px`,
+            height: `${squareSize}px`
+        }, {
             className: 'grid-square',
-            textContent: '',
-            style: {
-                width: `${squareSize}px`,
-                height: `${squareSize}px`,
-                border: '1px solid #ccc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                fontFamily: 'Arial, sans-serif',
-                fontWeight: 'bold',
-                color: '#333',
-                background: '#fff',
-                boxSizing: 'border-box'
-            }
-        };
-        Object.assign(square, { className: squareProperties.className, textContent: squareProperties.textContent });
-        Object.assign(square.style, squareProperties.style);
+            textContent: ''
+        });
         gridContainer.appendChild(square);
     }
 
@@ -43,13 +32,14 @@ export function createGridContainer(WORD_LENGTH, ROWS) {
 }
 
 export function createKeyboardContainer(WORD_LENGTH) {
+    const currentTheme = getTheme();
+    
     function simulateKeyPress(key) {
         const event = new KeyboardEvent('keydown', { key });
         document.dispatchEvent(event);
     }
     
-    const keyboardContainer = document.createElement('div');
-
+    const keyboardContainer = createStyledElement('div', stylePatterns.keyboardContainer);
 
     // Define keys in rows to mimic a real keyboard layout
     const keyRows = [
@@ -58,56 +48,39 @@ export function createKeyboardContainer(WORD_LENGTH) {
         ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
     ];
 
-    const keyboardContainerStyle = {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        width: 'max-content',
-        margin: '20px auto'
-    };
-
     const rowStyle = {
         display: 'flex',
         justifyContent: 'center',
-        gap: '8px'
+        gap: currentTheme.keyboard.gap
     };
-
-    const buttonStyle = {
-        padding: '10px 14px',
-        width: '20px',
-        textAlign: 'center',
-        fontSize: '1rem',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
-        color: '#333',
-        backgroundColor: '#e0e0e0',
-        border: '1px solid #ccc',
-        cursor: 'pointer',
-        transition: 'background-color 0.3s ease',
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-    };
-
-    Object.assign(keyboardContainer.style, keyboardContainerStyle);
 
     keyRows.forEach((row) => {
-        const rowDiv = document.createElement('div');
-        Object.assign(rowDiv.style, rowStyle);
+        const rowDiv = createStyledElement('div', rowStyle);
 
         row.forEach((key) => {
-            const keyButton = document.createElement('button');
-            keyButton.textContent = key === 'Backspace' ? '⌫' : key;
-            Object.assign(keyButton.style, buttonStyle);
+            const keyButton = createStyledElement('button', stylePatterns.keyboardButton, {
+                textContent: key === 'Backspace' ? '⌫' : key,
+                dataset: { key }
+            });
 
-            // Make Enter and Backspace a bit wider
+            // Make Enter and Backspace wider
             if (key === 'Enter' || key === 'Backspace') {
-                keyButton.style.flex = '1.5';
-                keyButton.style.minWidth = '60px';
+                keyButton.style.minWidth = currentTheme.keyboard.specialButtonMinWidth;
+                keyButton.style.fontSize = key === 'Enter' ? theme.typography.fontSize.xs : theme.typography.fontSize.lg;
             }
 
-            keyButton.addEventListener('click', () => { simulateKeyPress(key); });
+            // Add press effect
+            const triggerPress = addButtonPressEffect(keyButton);
+            keyButton.triggerPressEffect = triggerPress;
+
+            // Add hover effects
+            addButtonHoverEffect(keyButton);
+
+            keyButton.addEventListener('click', () => { 
+                triggerPress();
+                simulateKeyPress(key); 
+            });
+
             rowDiv.appendChild(keyButton);
         });
 
@@ -119,74 +92,75 @@ export function createKeyboardContainer(WORD_LENGTH) {
 
 // Helper to style selection buttons
 export function createSelectionButton(text) {
-    const btn = document.createElement('button');
-    btn.textContent = text;
-    Object.assign(btn.style, {
-        padding: '10px 20px',
-        fontSize: '1rem',
-        fontFamily: 'Arial, sans-serif',
-        fontWeight: 'bold',
-        color: '#fff',
-        backgroundColor: '#007bff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
+    const btn = createStyledElement('button', {
+        ...stylePatterns.primaryButton,
         display: 'block',
         textAlign: 'center',
-        margin: '20px auto 10px auto'
+        margin: `${theme.spacing.lg} auto 10px auto`
+    }, {
+        textContent: text
     });
+    
+    addButtonHoverEffect(btn, {
+        hoverTransform: 'translateY(-2px)',
+        normalTransform: 'translateY(0)',
+        hoverShadow: theme.shadows.primaryButtonHover,
+        normalShadow: theme.shadows.primaryButton,
+        skipColoredButtons: false
+    });
+    
     return btn;
 }
 
 export function createBottomButton(icon, ariaLabel) {
-    const btn = document.createElement('button');
-    btn.innerHTML = icon;
-    btn.setAttribute('aria-label', ariaLabel);
-    Object.assign(btn.style, {
-        fontSize: '1.5rem',
-        background: '#fff',
-        border: '1px solid #ccc',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        margin: '8px',
-        cursor: 'pointer',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'background 0.2s'
+    const btn = createStyledElement('button', {
+        ...stylePatterns.iconButton,
+        ...stylePatterns.flexCenter,
+        margin: theme.spacing.sm,
+        transition: `all ${theme.transitions.normal}`
+    }, {
+        innerHTML: icon,
+        'aria-label': ariaLabel
     });
-    btn.onmouseenter = () => btn.style.background = '#f0f0f0';
-    btn.onmouseleave = () => btn.style.background = '#fff';
+    
+    addButtonHoverEffect(btn, {
+        hoverTransform: 'translateY(-2px)',
+        normalTransform: 'translateY(0)',
+        skipColoredButtons: false
+    });
+    
     return btn;
 }
 
 function buttonWithLabel(btn, labelText) {
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.alignItems = 'center';
+    const wrapper = createStyledElement('div', {
+        ...stylePatterns.flexColumn,
+        alignItems: 'center'
+    });
     wrapper.appendChild(btn);
 
-    const label = document.createElement('div');
-    label.textContent = labelText;
-    label.style.fontSize = '0.85rem';
-    label.style.color = '#444';
-    label.style.marginTop = '2px';
+    const label = createStyledElement('div', {
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.textPrimary,
+        marginTop: '2px'
+    }, {
+        textContent: labelText
+    });
     wrapper.appendChild(label);
 
     return wrapper;
 }
 
 function createNewBtnRow(container) {    
-    const btnRow = document.createElement('div');
-    btnRow.id = 'game-btn-row';
-    btnRow.style.display = 'flex';
-    btnRow.style.justifyContent = 'center';
-    btnRow.style.gap = '32px';
-    btnRow.style.margin = '10px auto 0 auto';
-    btnRow.style.width = container.style.width || 'max-content';
+    const btnRow = createStyledElement('div', {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '32px',
+        margin: '10px auto 0 auto',
+        width: container.style.width || 'max-content'
+    }, {
+        id: 'game-btn-row'
+    });
 
     return btnRow;
 }
@@ -206,8 +180,14 @@ export function addHintButtons(container, getHints) {
     const lightbulbBtn = createBottomButton('💡', 'Show most common letters');
     const questionBtn = createBottomButton('❓', 'Show possible words');
 
-    lightbulbBtn.onclick = () => getHints('letters');
-    questionBtn.onclick = () => getHints('words');
+    lightbulbBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        getHints('letters');
+    };
+    questionBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        getHints('words');
+    };
 
     btnRow.appendChild(buttonWithLabel(lightbulbBtn, 'Hint'));
     btnRow.appendChild(buttonWithLabel(questionBtn, 'Answers'));
@@ -222,8 +202,14 @@ export function addGameButtons(container, func) {
     const giveUpBtn = createBottomButton('🛑', 'Give up this guess');
     const resetBtn = createBottomButton('🔄', 'Restart game session');
 
-    giveUpBtn.onclick = () => func('give up');
-    resetBtn.onclick = () => func('reset');
+    giveUpBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        func('give up');
+    };
+    resetBtn.onclick = (e) => {
+        e.currentTarget.blur();
+        func('reset');
+    };
 
     btnRow.appendChild(buttonWithLabel(giveUpBtn, 'Give up'));
     btnRow.appendChild(buttonWithLabel(resetBtn, 'Reset'));
@@ -234,6 +220,9 @@ export function addGameButtons(container, func) {
 
 
 export function removeGameContent(gridContainer, keyboardContainer) {
+    const gameCard = document.getElementById('game-card');
+    const searchRoot = gameCard || document.body;
+    
     // Remove grid
     if (gridContainer.parentNode) gridContainer.parentNode.removeChild(gridContainer);
     // Remove keyboard
@@ -245,10 +234,10 @@ export function removeGameContent(gridContainer, keyboardContainer) {
     document.getElementById('game-btn-row')?.remove();
     document.getElementById('hint-btn-row')?.remove();
     // Remove restart button if present
-    const restartBtn = Array.from(document.body.querySelectorAll('button')).find(btn => btn.textContent === 'Restart Game');
+    const restartBtn = Array.from(searchRoot.querySelectorAll('button')).find(btn => btn.textContent === 'Restart Game');
     if (restartBtn) restartBtn.remove();
     // Remove word source info
-    Array.from(document.body.querySelectorAll('p')).forEach(p => {
+    Array.from(searchRoot.querySelectorAll('p')).forEach(p => {
         if (p.textContent && p.textContent.startsWith('Words:')) p.remove();
     });
 }
@@ -258,35 +247,35 @@ export function createDropdown(container, content, id) {
     const existing = document.getElementById(id);
     if (existing) existing.remove();
 
-    const dropdown = document.createElement('div');
-    dropdown.id = id;
-    Object.assign(dropdown.style, {
+    const dropdown = createStyledElement('div', {
         width: container.offsetWidth ? `${container.offsetWidth}px` : '400px',
         maxWidth: '100%',
         margin: '10px auto',
-        background: '#fff',
-        border: '1.5px solid #007bff',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-        padding: '16px 16px 8px 16px',
+        background: theme.colors.cardBackground,
+        border: `1.5px solid ${theme.colors.primary}`,
+        borderRadius: theme.borderRadius.md,
+        boxShadow: theme.shadows.md,
+        padding: `16px 16px 8px 16px`,
         position: 'relative',
         zIndex: 100,
         textAlign: 'left',
-        fontFamily: 'Arial, sans-serif'
+        fontFamily: theme.typography.fontFamily
+    }, {
+        id
     });
 
     // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    Object.assign(closeBtn.style, {
+    const closeBtn = createStyledElement('button', {
         position: 'absolute',
-        top: '8px',
+        top: theme.spacing.sm,
         right: '12px',
         border: 'none',
         background: 'transparent',
-        fontSize: '1.2rem',
+        fontSize: theme.typography.fontSize.lg,
         cursor: 'pointer',
-        color: '#007bff'
+        color: theme.colors.primary
+    }, {
+        textContent: '✕'
     });
     closeBtn.onclick = () => dropdown.remove();
 
@@ -300,27 +289,56 @@ export function createDropdown(container, content, id) {
 
 export function addWordSourceBelowTitle(wordSource) {
     // Append small text below h1 to show word source
-    const wordSourceText = document.createElement('p');
-    wordSourceText.textContent = `Words: ${wordSource}`;
-    const wordSourceStyle = {
-        fontSize: '0.8rem',
-        color: '#666',
-        marginTop: '-20px',
-        marginBottom: '-5px',
-        textAlign: 'center',
-    };
-    Object.assign(wordSourceText.style, wordSourceStyle);
-    document.body.appendChild(wordSourceText);
+    const wordSourceText = createStyledElement('p', {
+        fontSize: theme.typography.fontSize.xs,
+        color: theme.colors.textSecondary,
+        marginTop: theme.spacing.xs,
+        marginBottom: theme.spacing.sm,
+        textAlign: 'center'
+    }, {
+        textContent: `Words: ${wordSource}`
+    });
+    const gameCard = document.getElementById('game-card');
+    if (gameCard) {
+        gameCard.appendChild(wordSourceText);
+    } else {
+        document.body.appendChild(wordSourceText);
+    }
 }
 
 
 
 export function applyBodyStyles() {
     Object.assign(document.body.style, {
-        fontFamily: 'Arial, sans-serif',
-        backgroundColor: '#f0f0f0',
-        color: '#333',
+        fontFamily: theme.typography.fontFamily,
+        background: theme.colors.background,
+        minHeight: '100vh',
+        color: theme.colors.textPrimary,
         textAlign: 'center',
-        padding: '20px'
+        padding: theme.spacing.lg,
+        margin: '0',
+        overflow: 'auto',
+        boxSizing: 'border-box'
     });
+}
+
+export function createGameCard() {
+    const card = createStyledElement('div', {
+        ...stylePatterns.card,
+        maxWidth: '600px',
+        margin: '0 auto',
+        minHeight: '400px'
+    }, {
+        id: 'game-card'
+    });
+    return card;
+}
+
+export function ensureGameCard() {
+    let card = document.getElementById('game-card');
+    if (!card) {
+        card = createGameCard();
+        document.body.appendChild(card);
+    }
+    return card;
 }

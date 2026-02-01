@@ -8,7 +8,9 @@ import {
     createSelectionButton, 
     removeGameContent 
 } from '../components/setup.js';
-import { clearGrid, encodeWord, mapWordSourceToWords } from '../utils.js';
+import { clearGrid, encodeWord, mapWordSourceToWords, closeHintDropdowns } from '../utils.js';
+import { theme } from '../styles/theme.js';
+import { createStyledElement } from '../styles/utils.js';
 
 export function createPlayerInputHandler(
     gameStateRef,
@@ -19,6 +21,19 @@ export function createPlayerInputHandler(
     updateGameState
 ) {
     return function playGameHandler(event) {
+        // Trigger visual effect on keyboard button
+        if (event.key.length === 1 && event.key.match(/[a-zA-Z]/)) {
+            const keyButton = keyboardContainer.querySelector(`button[data-key="${event.key.toUpperCase()}"]`);
+            if (keyButton && keyButton.triggerPressEffect) {
+                keyButton.triggerPressEffect();
+            }
+        } else if (event.key === 'Backspace' || event.key === 'Enter') {
+            const keyButton = keyboardContainer.querySelector(`button[data-key="${event.key}"]`);
+            if (keyButton && keyButton.triggerPressEffect) {
+                keyButton.triggerPressEffect();
+            }
+        }
+        
         const { word, currentRow, currentCol, wordsToUse, gameDone } = gameStateRef();
         
         if (event.key.length === 1 && event.key.match(/[a-zA-Z]/) && currentCol < WORD_LENGTH) {
@@ -29,6 +44,7 @@ export function createPlayerInputHandler(
             addLetterToSquare('', currentRow, newCol, gridContainer, WORD_LENGTH);
             updateGameState({ currentCol: newCol });
         } else if (event.key === 'Enter' && !gameDone) {
+            event.preventDefault();
             updateGameState({ playGameHandlerActive: false });
             document.removeEventListener('keydown', playGameHandler);
             
@@ -43,6 +59,9 @@ export function createPlayerInputHandler(
                 return;
             }
 
+            // Close any open hint/solution dropdowns when submitting a word
+            closeHintDropdowns();
+            
             checkGuess(guess, word, currentRow, gridContainer, keyboardContainer, WORD_LENGTH).then(() => {
                 const { wordSource } = gameStateRef();
                 
@@ -144,9 +163,10 @@ export function startGame(
     gameState,
     updateGameState
 ) {
+    const gameCard = document.getElementById('game-card');
     addWordSourceBelowTitle(wordSource);
-    document.body.appendChild(gridContainer);
-    document.body.appendChild(keyboardContainer);
+    gameCard.appendChild(gridContainer);
+    gameCard.appendChild(keyboardContainer);
     
     addHintButtons(keyboardContainer, (type) => {
         const currentState = updateGameState.gameState;
@@ -281,14 +301,17 @@ export function playerInput(
 }
 
 export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENGTH, ROWS, updateGameState) {
-    const container = document.createElement('div');
-    container.style.textAlign = 'center';
-    container.style.marginTop = '40px';
+    const container = createStyledElement('div', {
+        textAlign: 'center',
+        marginTop: theme.spacing.xxl
+    });
 
-    const info = document.createElement('div');
-    info.textContent = 'Choose your word set:';
-    info.style.fontSize = '1.2rem';
-    info.style.marginBottom = '20px';
+    const info = createStyledElement('div', {
+        fontSize: theme.typography.fontSize.lg,
+        marginBottom: theme.spacing.lg
+    }, {
+        textContent: 'Choose your word set:'
+    });
     container.appendChild(info);
 
     const btnCommon = createSelectionButton('Common Words');
@@ -298,7 +321,7 @@ export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENG
     btnCommon.onclick = () => {
         const wordSource = 'common';
         const [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
-        document.body.removeChild(container);
+        if (container.parentNode) container.parentNode.removeChild(container);
         updateGameState({ wordSource, wordsToGuess, wordsToUse });
         startGame(gridContainer, keyboardContainer, wordSource, wordsToGuess, wordsToUse, 
             true, false, WORD_LENGTH, ROWS, updateGameState.gameState, updateGameState);
@@ -307,7 +330,7 @@ export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENG
     btnPrev.onclick = () => {
         const wordSource = 'previous';
         const [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
-        document.body.removeChild(container);
+        if (container.parentNode) container.parentNode.removeChild(container);
         updateGameState({ wordSource, wordsToGuess, wordsToUse });
         startGame(gridContainer, keyboardContainer, wordSource, wordsToGuess, wordsToUse, 
             true, false, WORD_LENGTH, ROWS, updateGameState.gameState, updateGameState);
@@ -316,7 +339,7 @@ export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENG
     btnAll.onclick = () => {
         const wordSource = 'all';
         const [wordsToGuess, wordsToUse] = mapWordSourceToWords(wordSource);
-        document.body.removeChild(container);
+        if (container.parentNode) container.parentNode.removeChild(container);
         updateGameState({ wordSource, wordsToGuess, wordsToUse });
         startGame(gridContainer, keyboardContainer, wordSource, wordsToGuess, wordsToUse, 
             true, false, WORD_LENGTH, ROWS, updateGameState.gameState, updateGameState);
@@ -325,5 +348,6 @@ export function showWordSetSelection(gridContainer, keyboardContainer, WORD_LENG
     container.appendChild(btnCommon);
     container.appendChild(btnPrev);
     container.appendChild(btnAll);
-    document.body.appendChild(container);
+    const gameCard = document.getElementById('game-card');
+    gameCard.appendChild(container);
 }
