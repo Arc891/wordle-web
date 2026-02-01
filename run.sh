@@ -10,4 +10,5 @@ $HOME/.scripts/docker-build-push.sh \
   --image wordle-web \
   --port 41124 \
   --version-file "package.json" \
+  --push-registry localhost:5000 \
   $EXTRA_FLAGS \
